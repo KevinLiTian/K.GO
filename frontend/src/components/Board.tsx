@@ -8,9 +8,10 @@ import {
   playerColor,
   removeDeadGroups,
 } from '../utils/utils';
-import BoardGrid from './BoardGrid';
-import Stone from './Stone';
-import StoneShadow from './StoneShadow';
+
+import BoardGrid from './BoardComponents/BoardGrid';
+import Stone from './BoardComponents/Stone';
+import StoneShadow from './BoardComponents/StoneShadow';
 
 const Board = () => {
   const [board, setBoard] = useState(createBoard());
@@ -42,8 +43,7 @@ const Board = () => {
     if (previousBoards.includes(hash)) {
       return;
     } else {
-      const newPreviousBoards = [...previousBoards];
-      newPreviousBoards.push(hash);
+      const newPreviousBoards = [...previousBoards, hash];
       if (newPreviousBoards.length > 3) newPreviousBoards.shift();
       setPreviousBoards(newPreviousBoards);
     }

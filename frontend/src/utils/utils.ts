@@ -7,16 +7,6 @@ function contains(array: number[][], tuple: [number, number]) {
   return false;
 }
 
-export function getBoardHash(board: number[][]) {
-  let hash = 0;
-  for (let i = 0; i < 19; i++) {
-    for (let j = 0; j < 19; j++) {
-      hash = (hash * 3 + board[i][j]) % 1000000;
-    }
-  }
-  return hash;
-}
-
 export function isStar(row: number, col: number) {
   let stars = [];
   stars.push([3, 3]);
@@ -30,6 +20,24 @@ export function isStar(row: number, col: number) {
   stars.push([9, 9]);
 
   return contains(stars, [row, col]);
+}
+
+export function playerColor(player: number) {
+  return player === 1 ? 'black' : 'white';
+}
+
+export function copyBoard(board: number[][]) {
+  return JSON.parse(JSON.stringify(board));
+}
+
+export function getBoardHash(board: number[][]) {
+  let hash = 0;
+  for (let i = 0; i < 19; i++) {
+    for (let j = 0; j < 19; j++) {
+      hash = (hash * 3 + board[i][j]) % 1000000;
+    }
+  }
+  return hash;
 }
 
 export function createBoard(): number[][] {
@@ -56,15 +64,7 @@ function createVisited(): boolean[][] {
   return outer;
 }
 
-export function playerColor(player: number) {
-  return player === 1 ? 'black' : 'white';
-}
-
-export function copyBoard(board: number[][]) {
-  return JSON.parse(JSON.stringify(board));
-}
-
-export function findGroups(board: number[][]) {
+function findGroups(board: number[][]) {
   const groups: number[][][] = [];
   const visited: boolean[][] = createVisited();
 
@@ -79,17 +79,17 @@ export function findGroups(board: number[][]) {
         // DFS
         const frontier: number[][] = [[row, col]];
         while (frontier.length !== 0) {
-          const pos = frontier.pop()!;
-          for (const cell of findAdjacentCells(pos[0], pos[1])) {
+          const [x, y] = frontier.pop()!;
+          for (const [r, c] of findAdjacentCells(x, y)) {
             // Same colour, within board and not visited
             if (
-              withinBoard(cell[0], cell[1]) &&
-              board[cell[0]][cell[1]] === board[pos[0]][pos[1]] &&
-              !visited[cell[0]][cell[1]]
+              withinBoard(r, c) &&
+              board[r][c] === board[x][y] &&
+              !visited[r][c]
             ) {
-              group.push(cell);
-              visited[cell[0]][cell[1]] = true;
-              frontier.push(cell);
+              group.push([r, c]);
+              visited[r][c] = true;
+              frontier.push([r, c]);
             }
           }
         }
@@ -121,18 +121,15 @@ function withinBoard(row: number, col: number) {
   return row >= 0 && row < 19 && col >= 0 && col < 19;
 }
 
-export function findGroupLiberties(board: number[][], group: number[][]) {
+function findGroupLiberties(board: number[][], group: number[][]) {
   let liberties = 0;
   const visited: boolean[][] = createVisited();
 
   // Find liberties of each cell (consider overlap liberties)
-  for (const cell of group) {
-    for (const adjacent of findAdjacentCells(cell[0], cell[1])) {
-      if (
-        board[adjacent[0]][adjacent[1]] === 0 &&
-        !visited[adjacent[0]][adjacent[1]]
-      ) {
-        visited[adjacent[0]][adjacent[1]] = true;
+  for (const [row, col] of group) {
+    for (const [x, y] of findAdjacentCells(row, col)) {
+      if (board[x][y] === 0 && !visited[x][y]) {
+        visited[x][y] = true;
         liberties += 1;
       }
     }
@@ -141,7 +138,7 @@ export function findGroupLiberties(board: number[][], group: number[][]) {
   return liberties;
 }
 
-export function findStoneGroup(row: number, col: number, groups: number[][][]) {
+function findStoneGroup(row: number, col: number, groups: number[][][]) {
   for (let i = 0; i < groups.length; i++) {
     if (contains(groups[i], [row, col])) {
       return i;
@@ -175,8 +172,8 @@ export function removeDeadGroups(
 ) {
   for (let i of deadGroups) {
     if (i !== curStoneGroup) {
-      for (let stone of groups[i]) {
-        board[stone[0]][stone[1]] = 0;
+      for (let [row, col] of groups[i]) {
+        board[row][col] = 0;
       }
     }
   }

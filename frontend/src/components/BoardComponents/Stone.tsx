@@ -1,4 +1,4 @@
-import { StoneProps } from '../utils/Interfaces';
+import { StoneProps } from '../../utils/Interfaces';
 
 const Stone = ({ color, opacity }: StoneProps) => {
   return (

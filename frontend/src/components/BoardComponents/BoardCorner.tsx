@@ -1,4 +1,4 @@
-import { BoardCornerProps } from '../utils/Interfaces';
+import { BoardCornerProps } from '../../utils/Interfaces';
 
 const BoardCorner = ({ style }: BoardCornerProps) => {
   return (

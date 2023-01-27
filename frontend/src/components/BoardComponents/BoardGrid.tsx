@@ -2,8 +2,8 @@ import BoardCorner from './BoardCorner';
 import BoardEdge from './BoardEdge';
 import BoardGeneral from './BoardGeneral';
 import BoardStar from './BoardStar';
-import { BoardGridProps } from '../utils/Interfaces';
-import { isStar } from '../utils/utils';
+import { BoardGridProps } from '../../utils/Interfaces';
+import { isStar } from '../../utils/utils';
 
 const BoardGrid = ({ col, row }: BoardGridProps) => {
   return (

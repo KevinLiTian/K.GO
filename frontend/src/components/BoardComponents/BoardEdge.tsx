@@ -1,4 +1,4 @@
-import { BoardEdgeProps } from '../utils/Interfaces';
+import { BoardEdgeProps } from '../../utils/Interfaces';
 
 const BoardEdge = ({ style }: BoardEdgeProps) => {
   return (
