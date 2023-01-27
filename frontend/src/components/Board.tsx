@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { createBoard, playerColor } from '../utils/utils';
+import { copyBoard, createBoard, isKO, playerColor } from '../utils/utils';
 import BoardGrid from './BoardGrid';
 import Stone from './Stone';
 import StoneShadow from './StoneShadow';
@@ -13,6 +13,9 @@ const Board = () => {
   } | null>(null);
   const [player, setPlayer] = useState(1);
 
+  // Previous board hashes, for KO detection
+  const previousBoards: number[] = [];
+
   function handleMouseOver(row: number, col: number) {
     setHoveredCell({ row, col });
   }
@@ -22,10 +25,18 @@ const Board = () => {
   }
 
   function handleMouseClick(row: number, col: number) {
-    const newBoard = JSON.parse(JSON.stringify(board));
+    // Cell occupied
+    if (board[row][col] !== 0) return;
+
+    // Deep copy new board for processing
+    const newBoard = copyBoard(board);
     newBoard[row][col] = player;
+
+    // KO Rule (打劫)
+    if (isKO(newBoard, previousBoards)) return;
+
     setBoard(newBoard);
-    setPlayer(player === 1 ? -1 : 1);
+    setPlayer(player === 1 ? 2 : 1);
   }
 
   return (
