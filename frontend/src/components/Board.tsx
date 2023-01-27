@@ -1,6 +1,13 @@
 import { useState } from 'react';
 
-import { copyBoard, createBoard, isKO, playerColor } from '../utils/utils';
+import {
+  copyBoard,
+  createBoard,
+  getBoardHash,
+  getGroups,
+  playerColor,
+  removeDeadGroups,
+} from '../utils/utils';
 import BoardGrid from './BoardGrid';
 import Stone from './Stone';
 import StoneShadow from './StoneShadow';
@@ -12,9 +19,7 @@ const Board = () => {
     col: number;
   } | null>(null);
   const [player, setPlayer] = useState(1);
-
-  // Previous board hashes, for KO detection
-  const previousBoards: number[] = [];
+  const [previousBoards, setPreviousBoards] = useState<number[]>([]);
 
   function handleMouseOver(row: number, col: number) {
     setHoveredCell({ row, col });
@@ -33,8 +38,28 @@ const Board = () => {
     newBoard[row][col] = player;
 
     // KO Rule (打劫)
-    if (isKO(newBoard, previousBoards)) return;
+    const hash = getBoardHash(newBoard);
+    if (previousBoards.includes(hash)) {
+      return;
+    } else {
+      const newPreviousBoards = [...previousBoards];
+      newPreviousBoards.push(hash);
+      if (newPreviousBoards.length > 3) newPreviousBoards.shift();
+      setPreviousBoards(newPreviousBoards);
+    }
 
+    // Get current stone group and all dead stone groups
+    const [groups, curStoneGroup, deadGroups] = getGroups(newBoard, row, col);
+
+    // Cannot make stone's own group die if not making other groups die
+    if (deadGroups.length === 1 && deadGroups.includes(curStoneGroup)) {
+      return;
+    }
+
+    // Remove dead groups
+    removeDeadGroups(newBoard, groups, curStoneGroup, deadGroups);
+
+    // Update board and switch player
     setBoard(newBoard);
     setPlayer(player === 1 ? 2 : 1);
   }

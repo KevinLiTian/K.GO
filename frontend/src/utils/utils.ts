@@ -7,7 +7,7 @@ function contains(array: number[][], tuple: [number, number]) {
   return false;
 }
 
-function getBoardHash(board: number[][]) {
+export function getBoardHash(board: number[][]) {
   let hash = 0;
   for (let i = 0; i < 19; i++) {
     for (let j = 0; j < 19; j++) {
@@ -64,21 +64,9 @@ export function copyBoard(board: number[][]) {
   return JSON.parse(JSON.stringify(board));
 }
 
-export function isKO(board: number[][], previousBoards: number[]) {
-  const hash = getBoardHash(board);
-  if (previousBoards.includes(hash)) {
-    return true;
-  }
-  previousBoards.push(hash);
-  if (previousBoards.length > 8) {
-    previousBoards.shift();
-  }
-  return false;
-}
-
-function findGroups(board: number[][]) {
-  let groups: number[][][] = [];
-  let visited: boolean[][] = createVisited();
+export function findGroups(board: number[][]) {
+  const groups: number[][][] = [];
+  const visited: boolean[][] = createVisited();
 
   // Iterate over every cell on the board
   for (let row = 0; row < 19; row++) {
@@ -115,13 +103,16 @@ function findGroups(board: number[][]) {
 
 function findAdjacentCells(row: number, col: number) {
   const adjacent: number[][] = [];
-  for (let i = row - 1; i <= row + 1; i++) {
-    for (let j = col - 1; j <= col + 1; j++) {
-      if (withinBoard(i, j)) {
-        adjacent.push([i, j]);
-      }
+  [
+    [0, 1],
+    [0, -1],
+    [1, 0],
+    [-1, 0],
+  ].forEach(([dx, dy]) => {
+    if (withinBoard(row + dx, col + dy)) {
+      adjacent.push([row + dx, col + dy]);
     }
-  }
+  });
 
   return adjacent;
 }
@@ -130,6 +121,63 @@ function withinBoard(row: number, col: number) {
   return row >= 0 && row < 19 && col >= 0 && col < 19;
 }
 
-export function updateBoard(board: number[][]) {
+export function findGroupLiberties(board: number[][], group: number[][]) {
+  let liberties = 0;
+  const visited: boolean[][] = createVisited();
+
+  // Find liberties of each cell (consider overlap liberties)
+  for (const cell of group) {
+    for (const adjacent of findAdjacentCells(cell[0], cell[1])) {
+      if (
+        board[adjacent[0]][adjacent[1]] === 0 &&
+        !visited[adjacent[0]][adjacent[1]]
+      ) {
+        visited[adjacent[0]][adjacent[1]] = true;
+        liberties += 1;
+      }
+    }
+  }
+
+  return liberties;
+}
+
+export function findStoneGroup(row: number, col: number, groups: number[][][]) {
+  for (let i = 0; i < groups.length; i++) {
+    if (contains(groups[i], [row, col])) {
+      return i;
+    }
+  }
+}
+
+export function getGroups(
+  board: number[][],
+  row: number,
+  col: number
+): [number[][][], number, number[]] {
   const groups = findGroups(board);
+  const curStoneGroup = findStoneGroup(row, col, groups)!;
+  const deadGroups: number[] = [];
+
+  for (let i = 0; i < groups.length; i++) {
+    if (findGroupLiberties(board, groups[i]) === 0) {
+      deadGroups.push(i);
+    }
+  }
+
+  return [groups, curStoneGroup, deadGroups];
+}
+
+export function removeDeadGroups(
+  board: number[][],
+  groups: number[][][],
+  curStoneGroup: number,
+  deadGroups: number[]
+) {
+  for (let i of deadGroups) {
+    if (i !== curStoneGroup) {
+      for (let stone of groups[i]) {
+        board[stone[0]][stone[1]] = 0;
+      }
+    }
+  }
 }
