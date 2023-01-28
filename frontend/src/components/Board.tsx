@@ -65,7 +65,7 @@ const Board = () => {
   }
 
   return (
-    <table className="border-[10px] border-[#533939] bg-[#e8b060]">
+    <table className="border-[10px] border-[#533939] bg-[#e8b060] scale-[120%]">
       <tbody>
         {board.map((row, rowIndex) => (
           <tr key={rowIndex}>

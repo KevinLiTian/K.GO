@@ -81,12 +81,8 @@ function findGroups(board: number[][]) {
         while (frontier.length !== 0) {
           const [x, y] = frontier.pop()!;
           for (const [r, c] of findAdjacentCells(x, y)) {
-            // Same colour, within board and not visited
-            if (
-              withinBoard(r, c) &&
-              board[r][c] === board[x][y] &&
-              !visited[r][c]
-            ) {
+            // Same colour, and not visited
+            if (board[r][c] === board[x][y] && !visited[r][c]) {
               group.push([r, c]);
               visited[r][c] = true;
               frontier.push([r, c]);
