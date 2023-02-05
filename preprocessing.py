@@ -11,7 +11,7 @@ DATA_PATH = "data"
 
 class GoDataset(Dataset):
     def __init__(self):
-        # 45532 games by 6p - 9p players
+        # 66236 games by 4p - 9p players
         self.games = []
 
         # Read from data folder
@@ -52,7 +52,7 @@ class GoDataset(Dataset):
                         continue
                     elif black_rank[1] != "p" or white_rank[1] != "p":
                         continue
-                    elif int(black_rank[0]) < 6 or int(white_rank[0]) < 6:
+                    elif int(black_rank[0]) < 4 or int(white_rank[0]) < 4:
                         continue
 
                     self.games.append(file_path)
@@ -95,13 +95,21 @@ def parse_game(game):
 
 def create_board_state(board: Go, colour):
     """
-    20 feature planes
+    48 feature planes
     - Stone colours (3)
     - Constant 1 plane (1)
     - Turns since (8)
     - Liberties (8)
+    - Capture size (8)
+    - Self atari size (8)
+    - Liberty after (8)
+    - Ladder capture (1)
+    - Ladder escape (1)
+    - Sensibleness (1)
+    - Const 0 plane (1)
     """
-    # Stone colour
+
+    # Stone colour each (1x19x19)
     if colour == "b":
         player_stones = torch.Tensor(board.black).unsqueeze(0)
         opponent_stones = torch.Tensor(board.white).unsqueeze(0)
@@ -111,15 +119,42 @@ def create_board_state(board: Go, colour):
 
     empty = torch.Tensor(board.empty).unsqueeze(0)
 
-    # Const Ones
-    const_one = torch.ones(19, 19).unsqueeze(0)
+    # Const 1s (1x19x19)
+    const_one = torch.ones((1, 19, 19))
 
-    # Other feature planes (8x19x19)
+    # 8 channel feature planes (8x19x19)
     turns_since = one_hot_representation(board.turns_since)
     liberties = one_hot_representation(board.liberties)
+    capture_size = board.get_capture_size()
+    self_atari_size = board.get_self_atari_size()
+    liberties_after = board.get_liberties_after()
+
+    # Ladder (1x19x19)
+    ladder_capture = board.get_ladder_capture()
+    ladder_escape = board.get_ladder_escape()
+
+    # Sensibleness (1x19x19)
+    sensibleness = board.get_sensibleness()
+
+    # Const 0s (1x19x19)
+    const_zero = torch.zeros((1, 19, 19))
 
     return torch.cat(
-        [player_stones, opponent_stones, empty, const_one, turns_since, liberties],
+        [
+            player_stones,
+            opponent_stones,
+            empty,
+            const_one,
+            turns_since,
+            liberties,
+            capture_size,
+            self_atari_size,
+            liberties_after,
+            ladder_capture,
+            ladder_escape,
+            sensibleness,
+            const_zero,
+        ],
         dim=0,
     )
 

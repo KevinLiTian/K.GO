@@ -12,12 +12,12 @@ BATCH_SIZE = 16
 
 
 def train():
-    PolicyNetwork = GoPolicyNetwork()
+    PolicyNetwork = GoPolicyNetwork().cuda()
     criterion = CrossEntropyLoss()
     optimizer = SGD(PolicyNetwork.parameters(), lr=LR)
 
     # Decreaes total of 4 times
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=100000, gamma=0.5)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=1500000, gamma=0.5)
 
     # Dataset
     dataset = GoDataset()
@@ -38,6 +38,12 @@ def train():
             for board_state_batch, moves_batch in zip(
                 board_states_batches, moves_batches
             ):
+                # Data to GPU device
+                board_state_batch, moves_batch = (
+                    board_state_batch.cuda(),
+                    moves_batch.cuda(),
+                )
+
                 outputs = PolicyNetwork(board_state_batch)
                 loss = criterion(outputs, moves_batch.argmax(dim=1))
                 optimizer.zero_grad()
