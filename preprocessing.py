@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset
 from sgfmill import sgf
 
-from go import Go
+from Go.Go import Go
 
 DATA_PATH = "data"
 
@@ -74,7 +74,7 @@ def parse_game(game):
     board = Go()
 
     # Read moves one by one
-    for node in game.get_main_sequence():
+    for node in enumerate(game.get_main_sequence()):
         move = node.get_move()
         if move[0] is not None and move[1] is not None:
             colour, (row, col) = move
@@ -164,7 +164,7 @@ def one_hot_representation(board):
 
     for i in range(19):
         for j in range(19):
-            val = board[i][j]
+            val = board[i, j]
             if val < 8:
                 planes[val - 1, i, j] = 1
             else:

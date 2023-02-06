@@ -1,7 +1,7 @@
+import pickle
 import torch
 from torch.nn import CrossEntropyLoss
 from torch.optim import SGD, lr_scheduler
-import pickle
 
 from policy import GoPolicyNetwork
 from preprocessing import GoDataset
@@ -12,7 +12,8 @@ BATCH_SIZE = 16
 
 
 def train():
-    PolicyNetwork = GoPolicyNetwork().cuda()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    PolicyNetwork = GoPolicyNetwork().to(device)
     criterion = CrossEntropyLoss()
     optimizer = SGD(PolicyNetwork.parameters(), lr=LR)
 
@@ -40,8 +41,8 @@ def train():
             ):
                 # Data to GPU device
                 board_state_batch, moves_batch = (
-                    board_state_batch.cuda(),
-                    moves_batch.cuda(),
+                    board_state_batch.to(device),
+                    moves_batch.to(device),
                 )
 
                 outputs = PolicyNetwork(board_state_batch)
