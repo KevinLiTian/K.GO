@@ -4,6 +4,13 @@ from Go.util import find_adjacent_cells, find_stone_group
 
 
 class GoBase:
+    def display(self):
+        for row in range(19):
+            for col in range(19):
+                print(self.board[row, col], end="")
+            print()
+        print()
+
     def is_legal(self, row, col):
         if self.board[row, col] != 0:
             return False
@@ -17,10 +24,7 @@ class GoBase:
         game_copy = MiniGo(self)
         game_copy.make_move(row, col)
 
-        if str(game_copy.board) in self.hashes:
-            return True
-
-        return False
+        return game_copy.board.tostring() in self.hashes
 
     def is_suicide(self, row, col):
         game_copy = MiniGo(self)
@@ -285,3 +289,9 @@ class MiniGo(GoBase):
 
         # Remove dead groups from board
         self.remove_dead_groups(groups, cur_stone_group, dead_groups)
+
+        # Add to hash
+        self.hashes.append(self.board.tostring())
+        if len(self.hashes) > 3:
+            self.hashes.pop(0)
+        

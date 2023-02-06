@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from sgfmill import sgf
@@ -7,6 +8,10 @@ from sgfmill import sgf
 from Go.Go import Go
 
 DATA_PATH = "data"
+BATCH_SIZE = 16
+START = 0
+END = 1
+PATH = f"./dataset"
 
 
 class GoDataset(Dataset):
@@ -18,6 +23,7 @@ class GoDataset(Dataset):
         print("========== Start preprocessing game files ==========")
         num_games_processed = 0
         for dirpath, __, filenames in os.walk(DATA_PATH):
+            filenames.sort()
             for file in filenames:
                 if file.endswith("sgf"):
                     # Progress report
@@ -74,9 +80,12 @@ def parse_game(game):
     board = Go()
 
     # Read moves one by one
-    for node in enumerate(game.get_main_sequence()):
+    main_sequence = game.get_main_sequence()
+    length = len(main_sequence)
+    for idx, node in enumerate(main_sequence):
         move = node.get_move()
         if move[0] is not None and move[1] is not None:
+            print(f"Moves processed: {idx}/{length}")
             colour, (row, col) = move
 
             # Add board state
@@ -171,3 +180,34 @@ def one_hot_representation(board):
                 planes[7, i, j] = 1
 
     return planes
+
+
+if __name__ == "__main__":
+    dataset = GoDataset()
+
+    for idx in range(START, END):
+        board_states, moves = dataset[idx]
+
+        if len(moves) % BATCH_SIZE != 0:
+            board_states = board_states[: -(len(moves) % BATCH_SIZE)]
+            moves = moves[: -(len(moves) % BATCH_SIZE)]
+
+        board_states_batches = [
+            torch.stack(board_states[i : i + BATCH_SIZE])
+            for i in range(0, len(board_states), BATCH_SIZE)
+        ]
+
+        moves_batches = [
+            torch.stack(moves[i : i + BATCH_SIZE])
+            for i in range(0, len(moves), BATCH_SIZE)
+        ]
+
+        board_states_batches = [np.array(tensor) for tensor in board_states_batches]
+        moves_batches = [np.array(tensor) for tensor in moves_batches]
+
+        path = f"{PATH}/{idx}"
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        np.savez_compressed(f"{path}/board_states_batches", array=board_states_batches)
+        np.savez_compressed(f"{path}/moves_batches", array=moves_batches)

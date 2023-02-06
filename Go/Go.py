@@ -31,13 +31,6 @@ class Go(GoBase):
         self.legal_moves_cache = None
         self.legal_eyes_cache = None
 
-    def display(self):
-        for row in range(19):
-            for col in range(19):
-                print(self.board[row, col], end="")
-            print()
-        print()
-
     def is_eyeish(self, position, owner):
         """returns whether the position is empty and is surrounded by all stones of 'owner'"""
         (x, y) = position
@@ -265,7 +258,7 @@ class Go(GoBase):
         self.update_liberties()
 
         # Add to hash
-        self.hashes.append(str(self.board))
+        self.hashes.append(self.board.tostring())
         if len(self.hashes) > 3:
             self.hashes.pop(0)
 
