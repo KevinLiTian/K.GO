@@ -9,8 +9,8 @@ from Go.Go import Go
 
 DATA_PATH = "data"
 BATCH_SIZE = 16
-START = 0
-END = 1
+START = 50
+END = 60
 PATH = f"./dataset"
 
 
