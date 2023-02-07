@@ -5,7 +5,7 @@ from torch.nn import CrossEntropyLoss
 from torch.optim import SGD, lr_scheduler
 import numpy as np
 
-from policy import GoPolicyNetwork
+from models.policy import GoPolicyNetwork
 
 EPOCH = 10
 LR = 0.003

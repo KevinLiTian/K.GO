@@ -149,6 +149,9 @@ def create_board_state(board: Go):
     # Const 0s (1x19x19)
     const_zero = torch.zeros((1, 19, 19))
 
+    # Player's colour (Used in value network only)
+    player_colour = torch.ones((1, 19, 19)) * (board.turn == 1)
+
     return torch.cat(
         [
             player_stones,
@@ -164,6 +167,7 @@ def create_board_state(board: Go):
             ladder_escape,
             sensibleness,
             const_zero,
+            player_colour,
         ],
         dim=0,
     )

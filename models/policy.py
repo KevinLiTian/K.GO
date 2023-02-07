@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -24,7 +25,7 @@ class GoPolicyNetwork(nn.Module):
         self.conv.append(nn.Conv2d(192, 1, kernel_size=(1, 1), stride=(1, 1)))
 
         # Bias
-        self.bias = nn.Linear(19 * 19, 19 * 19)
+        self.bias = nn.Parameter(torch.zeros(361))
 
     def forward(self, x):
         # Pass the input through the convolutional layers
@@ -35,7 +36,7 @@ class GoPolicyNetwork(nn.Module):
         x = x.view(-1, 19 * 19)
 
         # Bias
-        x = self.bias(x)
+        x = x + self.bias(x)
 
         # Softmax activation
         x = F.softmax(x, dim=1)
