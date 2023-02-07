@@ -11,7 +11,7 @@ class GoPolicyNetwork(nn.Module):
 
         # First conv layer
         self.conv.append(
-            nn.Conv2d(20, 192, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
+            nn.Conv2d(48, 192, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))
         )
 
         # Conv layers 2 - 12

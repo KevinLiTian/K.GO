@@ -7,10 +7,11 @@ from sgfmill import sgf
 
 from Go.Go import Go
 
-DATA_PATH = "data"
 BATCH_SIZE = 16
-START = 50
-END = 60
+START = 0
+END = 100
+
+DATA_PATH = "data"
 PATH = f"./dataset"
 
 
@@ -86,10 +87,10 @@ def parse_game(game):
         move = node.get_move()
         if move[0] is not None and move[1] is not None:
             print(f"Moves processed: {idx}/{length}")
-            colour, (row, col) = move
+            row, col = move[1]
 
             # Add board state
-            board_states.append(create_board_state(board, colour))
+            board_states.append(create_board_state(board))
 
             # Make move
             board.make_move(row, col)
@@ -97,12 +98,12 @@ def parse_game(game):
             # Add move
             move = torch.zeros(19, 19)
             move[row, col] = 1
-            moves.append(move.flatten())
+            moves.append(torch.argmax(move.flatten()))
 
     return board_states, moves
 
 
-def create_board_state(board: Go, colour):
+def create_board_state(board: Go):
     """
     48 feature planes
     - Stone colours (3)
@@ -119,7 +120,7 @@ def create_board_state(board: Go, colour):
     """
 
     # Stone colour each (1x19x19)
-    if colour == "b":
+    if board.turn == 1:
         player_stones = torch.Tensor(board.black).unsqueeze(0)
         opponent_stones = torch.Tensor(board.white).unsqueeze(0)
     else:
