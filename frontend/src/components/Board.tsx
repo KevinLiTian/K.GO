@@ -12,6 +12,7 @@ import {
 import BoardGrid from './BoardComponents/BoardGrid';
 import Stone from './BoardComponents/Stone';
 import StoneShadow from './BoardComponents/StoneShadow';
+import { woodTexture1 } from '../utils/styles';
 
 const Board = () => {
   const [board, setBoard] = useState(createBoard());
@@ -65,7 +66,7 @@ const Board = () => {
   }
 
   return (
-    <table className="border-[10px] border-[#533939] bg-[#e8b060] scale-[120%]">
+    <table className="border-[10px] border-[#533939] scale-[120%]">
       <tbody>
         {board.map((row, rowIndex) => (
           <tr key={rowIndex}>
@@ -77,9 +78,7 @@ const Board = () => {
                   onClick={() => handleMouseClick(rowIndex, colIndex)}
                 >
                   <svg width="30" height="30px">
-                    <g>
-                      <rect x="0" y="0" width="30" height="30" fill="#e8b060" />
-                    </g>
+                    {woodTexture1}
                     <BoardGrid row={rowIndex} col={colIndex} />
                     {board[rowIndex][colIndex] === 0 &&
                       rowIndex === hoveredCell?.row &&

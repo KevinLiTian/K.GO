@@ -23,7 +23,7 @@ export function isStar(row: number, col: number) {
 }
 
 export function playerColor(player: number) {
-  return player === 1 ? 'black' : 'white';
+  return player === 1 ? 'black' : 'lightGray';
 }
 
 export function copyBoard(board: number[][]) {
