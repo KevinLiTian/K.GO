@@ -25,7 +25,7 @@ class Go(GoBase):
         self.turn = 1
 
         # Determine KO
-        self.hashes = []
+        self.ko = None
 
         # Optimize
         self.legal_moves_cache = None
@@ -193,6 +193,7 @@ class Go(GoBase):
         return plane
 
     def remove_dead_groups(self, groups, cur_stone_group, dead_groups):
+        captured = 0
         for idx in dead_groups:
             if idx != cur_stone_group:
                 for (row, col) in groups[idx]:
@@ -211,6 +212,9 @@ class Go(GoBase):
 
                     # Set turns since of the dead stone intersection to 0
                     self.turns_since[row, col] = 0
+
+                    captured += 1
+        return captured
 
     def update_turns_since(self):
         for row in range(19):
@@ -240,6 +244,9 @@ class Go(GoBase):
 
         self.empty[row, col] = 0
 
+        # Remove KO position
+        self.ko = None
+
         # Switch turns
         self.turn = 2 if self.turn == 1 else 1
 
@@ -249,7 +256,7 @@ class Go(GoBase):
         dead_groups = self.find_dead_groups(groups)
 
         # Remove dead groups from board
-        self.remove_dead_groups(groups, cur_stone_group, dead_groups)
+        num_captured = self.remove_dead_groups(groups, cur_stone_group, dead_groups)
 
         # Update turns since of the rest of the stones
         self.update_turns_since()
@@ -257,10 +264,28 @@ class Go(GoBase):
         # Update liberties of the rest of the stones
         self.update_liberties()
 
-        # Add to hash
-        self.hashes.append(self.board.tostring())
-        if len(self.hashes) > 3:
-            self.hashes.pop(0)
+        # Check for KO
+        if num_captured == 1:
+            # If played stone is not captured, cannot be KO
+            if cur_stone_group in dead_groups:
+                # 2 dead groups
+                # - Played stone
+                # - captured stone
+
+                # Remove played stone group, only captured remains
+                dead_groups.remove(cur_stone_group)
+                captured_idx = dead_groups[0]
+
+                # Get dead stone position
+                dead_stone = groups[captured_idx][0]
+
+                # Get played stone's group positions
+                cur_group = groups[cur_stone_group]
+
+                # Only if the current stone group only has 1 stone and only has one liberty
+                # is considered a KO situation
+                if len(cur_group) == 1 and self.find_group_liberty(cur_group) == 1:
+                    self.ko = dead_stone
 
         # Remove cache
         self.legal_moves_cache = None

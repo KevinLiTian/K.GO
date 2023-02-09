@@ -40,7 +40,6 @@ def train():
     for epoch in range(EPOCH):
         for sub_dir in dataset:
             sub_path = sub_dir.path
-            print(sub_path)
 
             board_states_batches = np.load(f"{sub_path}/{BOARDS_FILE}")["array"]
             moves_batches = np.load(f"{sub_path}/{MOVES_FILE}")["array"]

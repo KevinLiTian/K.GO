@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from Go.util import find_adjacent_cells, find_stone_group
 
 
@@ -16,15 +14,9 @@ class GoBase:
             return False
         if self.is_suicide(row, col):
             return False
-        if self.is_ko(row, col):
+        if self.ko == (row, col):
             return False
         return True
-
-    def is_ko(self, row, col):
-        game_copy = MiniGo(self)
-        game_copy.make_move(row, col)
-
-        return game_copy.board.tostring() in self.hashes
 
     def is_suicide(self, row, col):
         game_copy = MiniGo(self)
@@ -91,10 +83,14 @@ class GoBase:
         return liberty
 
     def remove_dead_groups(self, groups, cur_stone_group, dead_groups):
+        captured = 0
         for idx in dead_groups:
             if idx != cur_stone_group:
                 for (row, col) in groups[idx]:
                     self.board[row, col] = 0
+                    captured += 1
+
+        return captured
 
     def get_stone_lib_pos(self, row, col):
         groups = self.find_groups()
@@ -122,15 +118,15 @@ class GoBase:
         controlled by the remaining_attempts argument.  If it reaches 0, the
         move is assumed not to be a ladder capture.
         """
-
         row, col = action
         # ignore illegal moves
         if not self.is_legal(row, col):
             return False
 
-        # if we haven't found a capture by a certain number of moves, assume it's worked.
+        # if we haven't found a capture by a certain number of moves,
+        # assume it's not a capture
         if remaining_attempts <= 0:
-            return True
+            return False
 
         hunter_player = self.turn
         prey_player = 2 if self.turn == 1 else 1
@@ -273,11 +269,15 @@ class MiniGo(GoBase):
     def __init__(self, game):
         self.board = game.board.copy()
         self.turn = game.turn
-        self.hashes = deepcopy(game.hashes)
+
+        self.ko = game.ko
 
     def make_move(self, row, col):
         # Update move to board
         self.board[row, col] = self.turn
+
+        # Remove previous KO position
+        self.ko = None
 
         # Switch turns
         self.turn = 2 if self.turn == 1 else 1
@@ -288,10 +288,27 @@ class MiniGo(GoBase):
         dead_groups = self.find_dead_groups(groups)
 
         # Remove dead groups from board
-        self.remove_dead_groups(groups, cur_stone_group, dead_groups)
+        num_captured = self.remove_dead_groups(groups, cur_stone_group, dead_groups)
 
-        # Add to hash
-        self.hashes.append(self.board.tostring())
-        if len(self.hashes) > 3:
-            self.hashes.pop(0)
-        
+        # Check for KO
+        if num_captured == 1:
+            # If played stone is not captured, cannot be KO
+            if cur_stone_group in dead_groups:
+                # 2 dead groups
+                # - Played stone
+                # - captured stone
+
+                # Remove played stone group, only captured remains
+                dead_groups.remove(cur_stone_group)
+                captured_idx = dead_groups[0]
+
+                # Get dead stone position
+                dead_stone = groups[captured_idx][0]
+
+                # Get played stone's group positions
+                cur_group = groups[cur_stone_group]
+
+                # Only if the current stone group only has 1 stone and only has one liberty
+                # is considered a KO situation
+                if len(cur_group) == 1 and self.find_group_liberty(cur_group) == 1:
+                    self.ko = dead_stone
