@@ -8,8 +8,8 @@ from sgfmill import sgf
 from Go.Go import Go
 
 BATCH_SIZE = 16
-START = 1200
-END = 1250
+START = 1600
+END = 1600
 
 DATA_PATH = "data"
 PATH = f"./dataset"
