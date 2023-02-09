@@ -1,22 +1,21 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-class GoPolicyNetwork(nn.Module):
+class GoValueNetwork(nn.Module):
     def __init__(self):
-        super(GoPolicyNetwork, self).__init__()
+        super(GoValueNetwork, self).__init__()
 
         # Convolutional layers
         self.conv = nn.ModuleList()
 
         # First conv layer
         self.conv.append(
-            nn.Conv2d(48, 192, kernel_size=(5, 5), stride=1, padding=(2, 2))
+            nn.Conv2d(49, 192, kernel_size=(5, 5), stride=1, padding=(2, 2))
         )
 
-        # Conv layers 2 - 12
-        for __ in range(2, 13):
+        # Conv layers 2 - 13
+        for __ in range(2, 14):
             self.conv.append(
                 nn.Conv2d(192, 192, kernel_size=(3, 3), stride=1, padding=(1, 1))
             )
@@ -24,8 +23,9 @@ class GoPolicyNetwork(nn.Module):
         # Final conv layer
         self.conv.append(nn.Conv2d(192, 1, kernel_size=(1, 1), stride=1))
 
-        # Bias
-        self.bias = nn.Parameter(torch.zeros(361))
+        # Fully connected layer
+        self.fc1 = nn.Linear(19 * 19, 256, bias=True)
+        self.fc2 = nn.Linear(256, 1, bias=True)
 
     def forward(self, x):
         # Pass the input through the convolutional layers
@@ -35,9 +35,7 @@ class GoPolicyNetwork(nn.Module):
         # Flatten
         x = x.view(-1, 19 * 19)
 
-        # Bias
-        x = x + self.bias(x)
+        x = F.relu(self.fc1(x))
+        x = F.tanh(self.fc2(x))
 
-        # Softmax activation
-        x = F.softmax(x, dim=1)
         return x
