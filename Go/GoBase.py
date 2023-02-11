@@ -1,3 +1,5 @@
+import numpy as np
+
 from Go.util import find_stone_group, within_board
 
 
@@ -30,17 +32,22 @@ class GoBase:
         return True
 
     def is_suicide(self, row, col):
-        game_copy = MiniGo(self)
-        game_copy.make_move(row, col)
+        if any(self.board[x, y] == 0 for (x, y) in GoBase.adjacent_cache[(row, col)]):
+            return False
 
-        cur_stone_group = find_stone_group(row, col, self.groups_cache)
-        dead_groups = game_copy.find_dead_groups()
+        for (x, y) in GoBase.adjacent_cache[(row, col)]:
+            # Connect to friend
+            friendly = self.board[x, y] == self.turn
+            has_other_liberty = self.liberties[x, y] > 1
+            if friendly and has_other_liberty:
+                return False
 
-        # Only cur stone group is dead, suicide
-        if len(dead_groups) == 1 and cur_stone_group in dead_groups:
-            return True
+            # Kill enemy
+            is_enemy = self.board[x, y] != self.turn
+            if is_enemy and not has_other_liberty:
+                return False
 
-        return False
+        return True
 
     def find_groups(self):
         groups = []
@@ -268,17 +275,28 @@ class GoBase:
         # no ladder escape found
         return False
 
+    def update_liberties(self):
+        # Refresh to 0
+        self.liberties = np.zeros((19, 19), dtype=int)
+
+        for group in self.groups_cache:
+            liberty = self.find_group_liberty(group)
+            for (row, col) in group:
+                self.liberties[row, col] = liberty
+
 
 class MiniGo(GoBase):
     """
-    This is a minimal version of Go game states, used for copying partial board states
-    to replace the use of deepcopy. Optimizing the runtime of copying a board state.
+    This is a mini version of Go game, used for copying partial board states
+    to replace the use of deepcopy, omit updating some states such as libertis and turns.
+    Optimizing the runtime of copying a board state and use for calculations such as ladder capture
     """
 
     def __init__(self, game):
         self.board = game.board.copy()
         self.turn = game.turn
 
+        self.liberties = None
         self.ko = game.ko
 
         self.groups_cache = None
@@ -328,3 +346,6 @@ class MiniGo(GoBase):
         for index in sorted(dead_groups, reverse=True):
             if index != cur_stone_group:
                 del self.groups_cache[index]
+
+        # Update liberties of the rest of the stones
+        self.update_liberties()

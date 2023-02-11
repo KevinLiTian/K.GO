@@ -151,10 +151,11 @@ def one_hot_representation(board):
 def make_moves():
     go = Go()
     go.make_move(3, 3)
-    go.make_move(3, 15)
-    go.make_move(15, 3)
-    go.make_move(15, 15)
-    go.make_move(9, 9)
+    go.make_move(3, 4)
+    go.make_move(2, 4)
+    go.make_move(0, 0)
+    go.make_move(4, 3)
+    go.make_move(0, 1)
     return go
 
 if __name__ == "__main__":
