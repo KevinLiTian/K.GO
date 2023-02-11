@@ -13,5 +13,4 @@ export interface BoardCornerProps {
 
 export interface StoneProps {
   color: string;
-  opacity: number;
 }

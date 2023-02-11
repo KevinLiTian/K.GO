@@ -2,66 +2,32 @@ import os
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 from sgfmill import sgf
 
 from Go.Go import Go
 
 BATCH_SIZE = 16
-START = 2080
-END = 2100
+START = 0
+END = 10000
 
 DATA_PATH = "data"
 PATH = f"./dataset"
 
 
-class GoDataset(Dataset):
+class GoDataset:
     def __init__(self):
-        # 66236 games by 4p - 9p players
+        # 142010 KGS games by
+        # - One of the players is 7 dan or stronger
+        # - Both players 6 dan
+        # - No handicap games included
         self.games = []
 
         # Read from data folder
-        print("========== Start preprocessing game files ==========")
-        num_games_processed = 0
         for dirpath, __, filenames in os.walk(DATA_PATH):
             filenames.sort()
             for file in filenames:
                 if file.endswith("sgf"):
-                    # Progress report
-                    num_games_processed += 1
-                    if num_games_processed % 10000 == 0:
-                        print(f"{num_games_processed}/115623 games processed")
-
                     file_path = os.path.join(dirpath, file)
-                    with open(file_path, "rb") as file:
-                        game = sgf.Sgf_game.from_bytes(file.read())
-
-                    # Discard handicap games
-                    try:
-                        if game.get_handicap() is not None:
-                            continue
-                    except ValueError:
-                        continue
-
-                    # Discard setup stone games (座子)
-                    root = game.get_root()
-                    if root.has_setup_stones():
-                        continue
-
-                    # Discard amateur games and low dan games
-                    try:
-                        black_rank = root.get("BR")
-                        white_rank = root.get("WR")
-                    except ValueError:
-                        continue
-
-                    if len(black_rank) != 2 or len(white_rank) != 2:
-                        continue
-                    elif black_rank[1] != "p" or white_rank[1] != "p":
-                        continue
-                    elif int(black_rank[0]) < 4 or int(white_rank[0]) < 4:
-                        continue
-
                     self.games.append(file_path)
 
     def __getitem__(self, index):
@@ -120,14 +86,12 @@ def create_board_state(board: Go):
     """
 
     # Stone colour each (1x19x19)
-    if board.turn == 1:
-        player_stones = torch.Tensor(board.black).unsqueeze(0)
-        opponent_stones = torch.Tensor(board.white).unsqueeze(0)
-    else:
-        player_stones = torch.Tensor(board.white).unsqueeze(0)
-        opponent_stones = torch.Tensor(board.black).unsqueeze(0)
-
-    empty = torch.Tensor(board.empty).unsqueeze(0)
+    stones = torch.zeros((3, 19, 19))
+    player = board.turn
+    opponent = 2 if player == 1 else 1
+    stones[0, :, :] = torch.Tensor(board.board == player)
+    stones[1, :, :] = torch.Tensor(board.board == opponent)
+    stones[2, :, :] = torch.Tensor(board.board == 0)
 
     # Const 1s (1x19x19)
     const_one = torch.ones((1, 19, 19))
@@ -139,7 +103,7 @@ def create_board_state(board: Go):
     self_atari_size = board.get_self_atari_size()
     liberties_after = board.get_liberties_after()
 
-    # Ladder (1x19x19)
+    # Ladders (2x19x19)
     ladder_capture = board.get_ladder_capture()
     ladder_escape = board.get_ladder_escape()
 
@@ -154,9 +118,7 @@ def create_board_state(board: Go):
 
     return torch.cat(
         [
-            player_stones,
-            opponent_stones,
-            empty,
+            stones,
             const_one,
             turns_since,
             liberties,
@@ -186,33 +148,45 @@ def one_hot_representation(board):
 
     return planes
 
+def make_moves():
+    go = Go()
+    go.make_move(3, 3)
+    go.make_move(3, 15)
+    go.make_move(15, 3)
+    go.make_move(15, 15)
+    go.make_move(9, 9)
+    return go
 
 if __name__ == "__main__":
-    dataset = GoDataset()
+    import cProfile
+    go = make_moves()
 
-    for idx in range(START, END):
-        board_states, moves = dataset[idx]
+    cProfile.run("create_board_state(go)")
+    # dataset = GoDataset()
 
-        if len(moves) % BATCH_SIZE != 0:
-            board_states = board_states[: -(len(moves) % BATCH_SIZE)]
-            moves = moves[: -(len(moves) % BATCH_SIZE)]
+    # for idx in range(START, END):
+        # board_states, moves = dataset[idx]
 
-        board_states_batches = [
-            torch.stack(board_states[i : i + BATCH_SIZE])
-            for i in range(0, len(board_states), BATCH_SIZE)
-        ]
+        # if len(moves) % BATCH_SIZE != 0:
+        #     board_states = board_states[: -(len(moves) % BATCH_SIZE)]
+        #     moves = moves[: -(len(moves) % BATCH_SIZE)]
 
-        moves_batches = [
-            torch.stack(moves[i : i + BATCH_SIZE])
-            for i in range(0, len(moves), BATCH_SIZE)
-        ]
+        # board_states_batches = [
+        #     torch.stack(board_states[i : i + BATCH_SIZE])
+        #     for i in range(0, len(board_states), BATCH_SIZE)
+        # ]
 
-        board_states_batches = [np.array(tensor) for tensor in board_states_batches]
-        moves_batches = [np.array(tensor) for tensor in moves_batches]
+        # moves_batches = [
+        #     torch.stack(moves[i : i + BATCH_SIZE])
+        #     for i in range(0, len(moves), BATCH_SIZE)
+        # ]
 
-        path = f"{PATH}/{idx}"
-        if not os.path.exists(path):
-            os.makedirs(path)
+        # board_states_batches = [np.array(tensor) for tensor in board_states_batches]
+        # moves_batches = [np.array(tensor) for tensor in moves_batches]
 
-        np.savez_compressed(f"{path}/board_states_batches", array=board_states_batches)
-        np.savez_compressed(f"{path}/moves_batches", array=moves_batches)
+        # path = f"{PATH}/{idx}"
+        # if not os.path.exists(path):
+        #     os.makedirs(path)
+
+        # np.savez_compressed(f"{path}/board_states_batches", array=board_states_batches)
+        # np.savez_compressed(f"{path}/moves_batches", array=moves_batches)

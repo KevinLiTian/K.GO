@@ -12,10 +12,10 @@ import {
 import BoardGrid from './BoardComponents/BoardGrid';
 import Stone from './BoardComponents/Stone';
 import StoneShadow from './BoardComponents/StoneShadow';
-import { woodTexture1 } from '../utils/styles';
+import StoneHover from './BoardComponents/StoneHover';
 
 const Board = () => {
-  const [board, setBoard] = useState(createBoard());
+  const [board, setBoard] = useState(() => createBoard());
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
     col: number;
@@ -78,20 +78,19 @@ const Board = () => {
                   onClick={() => handleMouseClick(rowIndex, colIndex)}
                 >
                   <svg width="30" height="30px">
-                    {woodTexture1}
+                    <g>
+                      <rect x="0" y="0" width="30" height="30" fill="#cd9d6f" />
+                    </g>
                     <BoardGrid row={rowIndex} col={colIndex} />
                     {board[rowIndex][colIndex] === 0 &&
                       rowIndex === hoveredCell?.row &&
                       colIndex === hoveredCell.col && (
-                        <Stone color={playerColor(player)} opacity={0.5} />
+                        <StoneHover color={playerColor(player)} />
                       )}
                     {board[rowIndex][colIndex] !== 0 && (
                       <>
                         <StoneShadow />
-                        <Stone
-                          color={playerColor(board[rowIndex][colIndex])}
-                          opacity={1}
-                        />
+                        <Stone color={playerColor(board[rowIndex][colIndex])} />
                       </>
                     )}
                   </svg>

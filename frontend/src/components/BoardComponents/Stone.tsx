@@ -1,13 +1,13 @@
 import { StoneProps } from '../../utils/Interfaces';
 
-const Stone = ({ color, opacity }: StoneProps) => {
+const Stone = ({ color }: StoneProps) => {
   return (
     <g>
       <filter id="stoneFilter">
         <feSpecularLighting
           result="specOut"
           specularExponent="64"
-          lighting-color="white"
+          lightingColor="white"
         >
           <fePointLight x="10" y="10" z="8" />
         </feSpecularLighting>
@@ -26,7 +26,6 @@ const Stone = ({ color, opacity }: StoneProps) => {
         cy="15.0"
         r="12"
         fill={color}
-        fillOpacity={opacity}
         filter="url(#stoneFilter)"
       />
     </g>

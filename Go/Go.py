@@ -2,18 +2,13 @@ import torch
 import numpy as np
 
 from Go.GoBase import GoBase, MiniGo
-from Go.util import find_adjacent_cells, find_stone_group, diagonals
+from Go.util import find_stone_group, diagonals
 
 
 class Go(GoBase):
     def __init__(self):
         # Game board
         self.board = np.zeros((19, 19), dtype=int)
-
-        # Board of only black/white/empty
-        self.black = np.zeros((19, 19), dtype=int)
-        self.white = np.zeros((19, 19), dtype=int)
-        self.empty = np.ones((19, 19), dtype=int)
 
         # Turns since (each intersection)
         self.turns_since = np.zeros((19, 19), dtype=int)
@@ -30,6 +25,7 @@ class Go(GoBase):
         # Optimize
         self.legal_moves_cache = None
         self.legal_eyes_cache = None
+        self.groups_cache = None
 
     def is_eyeish(self, position, owner):
         """returns whether the position is empty and is surrounded by all stones of 'owner'"""
@@ -37,7 +33,7 @@ class Go(GoBase):
         if self.board[x, y] != 0:
             return False
 
-        for (nx, ny) in find_adjacent_cells(x, y):
+        for (nx, ny) in GoBase.adjacent_cache[(x, y)]:
             if self.board[nx, ny] != owner:
                 return False
         return True
@@ -54,7 +50,7 @@ class Go(GoBase):
         num_bad_diagonal = 0
 
         # if in middle of board, 1 bad neighbor is allowable; zero for edges and corners
-        allowable_bad_diagonal = 1 if len(find_adjacent_cells(x, y)) == 4 else 0
+        allowable_bad_diagonal = 1 if len(GoBase.adjacent_cache[(x, y)]) == 4 else 0
 
         for row, col in diagonals(position):
             # opponent stones count against this being eye
@@ -98,10 +94,12 @@ class Go(GoBase):
 
     def get_groups_around(self, row, col):
         groups_around = []
-        groups = self.find_groups()
-        for (x, y) in find_adjacent_cells(row, col):
+
+        for (x, y) in GoBase.adjacent_cache[(row, col)]:
             if self.board[x, y] != 0:
-                groups_around.append(groups[find_stone_group(x, y, groups)])
+                groups_around.append(
+                    self.groups_cache[find_stone_group(x, y, self.groups_cache)]
+                )
 
         return groups_around
 
@@ -117,9 +115,7 @@ class Go(GoBase):
                 # (note suicide and ko are not an issue because they are not
                 # legal moves)
                 (gx, gy) = neighbor_group[0]
-                if (self.find_group_liberty(neighbor_group) == 1) and (
-                    self.board[gx, gy] != self.turn
-                ):
+                if (self.liberties[gx, gy] == 1) and (self.board[gx, gy] != self.turn):
                     n_captured += len(neighbor_group)
 
             planes[min(n_captured, 7), x, y] = 1
@@ -131,9 +127,9 @@ class Go(GoBase):
             self_atari_size = 0
             game_copy = MiniGo(self)
             game_copy.make_move(x, y)
-            groups = game_copy.find_groups()
-            cur_stone_group = find_stone_group(x, y, groups)
-            for idx, group in enumerate(groups):
+
+            cur_stone_group = find_stone_group(x, y, game_copy.groups_cache)
+            for idx, group in enumerate(game_copy.groups_cache):
                 # This move will self atari
                 if game_copy.find_group_liberty(group) == 1 and cur_stone_group == idx:
                     self_atari_size += len(group)
@@ -149,22 +145,22 @@ class Go(GoBase):
             game_copy = MiniGo(self)
             game_copy.make_move(x, y)
 
-            groups = game_copy.find_groups()
-            cur_stone_group = find_stone_group(x, y, groups)
-            liberty = game_copy.find_group_liberty(groups[cur_stone_group])
+            cur_stone_group = find_stone_group(x, y, game_copy.groups_cache)
+            liberty = game_copy.find_group_liberty(
+                game_copy.groups_cache[cur_stone_group]
+            )
             planes[min(7, liberty - 1), x, y] = 1
 
         return planes
 
     def get_stone_lib_pos(self, row, col):
-        groups = self.find_groups()
-        group = groups[find_stone_group(row, col, groups)]
+        group = self.groups_cache[find_stone_group(row, col, self.groups_cache)]
 
         liberty = []
         visited = set()
 
         for (row, col) in group:
-            for (x, y) in find_adjacent_cells(row, col):
+            for (x, y) in GoBase.adjacent_cache[(row, col)]:
                 if self.board[x, y] == 0 and not (x, y) in visited:
                     visited.add((x, y))
                     liberty.append((x, y))
@@ -192,21 +188,11 @@ class Go(GoBase):
 
         return plane
 
-    def remove_dead_groups(self, groups, cur_stone_group, dead_groups):
+    def remove_dead_groups(self, cur_stone_group, dead_groups):
         captured = 0
         for idx in dead_groups:
             if idx != cur_stone_group:
-                for (row, col) in groups[idx]:
-                    # Update black/white board
-                    if self.board[row, col] == 1:
-                        self.black[row, col] = 0
-
-                    else:
-                        self.white[row, col] = 0
-
-                    # Update empty board
-                    self.empty[row, col] = 1
-
+                for (row, col) in self.groups_cache[idx]:
                     # Remove stones on the board
                     self.board[row, col] = 0
 
@@ -216,19 +202,11 @@ class Go(GoBase):
                     captured += 1
         return captured
 
-    def update_turns_since(self):
-        for row in range(19):
-            for col in range(19):
-                # +1 to every stone on the board
-                if self.board[row, col] != 0:
-                    self.turns_since[row, col] += 1
-
     def update_liberties(self):
         # Refresh to 0
         self.liberties = np.zeros((19, 19), dtype=int)
 
-        groups = self.find_groups()
-        for group in groups:
+        for group in self.groups_cache:
             liberty = self.find_group_liberty(group)
             for (row, col) in group:
                 self.liberties[row, col] = liberty
@@ -237,13 +215,6 @@ class Go(GoBase):
         # Update move to board
         self.board[row, col] = self.turn
 
-        if self.turn == 1:
-            self.black[row, col] = 1
-        else:
-            self.white[row, col] = 1
-
-        self.empty[row, col] = 0
-
         # Remove KO position
         self.ko = None
 
@@ -251,18 +222,15 @@ class Go(GoBase):
         self.turn = 2 if self.turn == 1 else 1
 
         # Find groups, current stones's group and dead groups
-        groups = self.find_groups()
-        cur_stone_group = find_stone_group(row, col, groups)
-        dead_groups = self.find_dead_groups(groups)
+        self.groups_cache = self.find_groups()
+        cur_stone_group = find_stone_group(row, col, self.groups_cache)
+        dead_groups = self.find_dead_groups()
 
         # Remove dead groups from board
-        num_captured = self.remove_dead_groups(groups, cur_stone_group, dead_groups)
+        num_captured = self.remove_dead_groups(cur_stone_group, dead_groups)
 
         # Update turns since of the rest of the stones
-        self.update_turns_since()
-
-        # Update liberties of the rest of the stones
-        self.update_liberties()
+        self.turns_since[self.board != 0] += 1
 
         # Check for KO
         if num_captured == 1:
@@ -277,15 +245,23 @@ class Go(GoBase):
                 captured_idx = dead_groups[0]
 
                 # Get dead stone position
-                dead_stone = groups[captured_idx][0]
+                dead_stone = self.groups_cache[captured_idx][0]
 
                 # Get played stone's group positions
-                cur_group = groups[cur_stone_group]
+                cur_group = self.groups_cache[cur_stone_group]
 
                 # Only if the current stone group only has 1 stone and only has one liberty
                 # is considered a KO situation
                 if len(cur_group) == 1 and self.find_group_liberty(cur_group) == 1:
                     self.ko = dead_stone
+
+        # Update groups cache
+        for index in sorted(dead_groups, reverse=True):
+            if index != cur_stone_group:
+                del self.groups_cache[index]
+
+        # Update liberties of the rest of the stones
+        self.update_liberties()
 
         # Remove cache
         self.legal_moves_cache = None

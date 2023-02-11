@@ -1,6 +1,7 @@
 import unittest
 
 from Go.Go import Go
+from preprocessing import create_board_state
 
 
 class TestKo(unittest.TestCase):
@@ -157,6 +158,45 @@ class TestEye(unittest.TestCase):
         go.make_move(1, 12)
 
         self.assertTrue(go.is_eye((0, 11), 2))
+
+class TestBoardState(unittest.TestCase):
+    def test_stone_colours(self):
+        go = Go()
+
+        go.make_move(3, 3)
+        state = create_board_state(go)
+        self.assertEqual(state[1, 3, 3], 1)
+        
+        go.make_move(15, 15)
+        state = create_board_state(go)
+        self.assertEqual(state[0, 3, 3], 1)
+        self.assertEqual(state[1, 15, 15], 1)
+
+        # Not empty
+        self.assertEqual(state[2, 3, 3], 0)
+        self.assertEqual(state[2, 15, 15], 0)
+
+    def test_turns_since(self):
+        go = Go()
+
+        go.make_move(3, 3)
+        go.make_move(15, 15)
+
+        state = create_board_state(go)
+        self.assertEqual(state[4, 15, 15], 1)
+        self.assertEqual(state[5, 3, 3], 1)
+
+    def test_liberties(self):
+        go = Go()
+
+        go.make_move(3, 3)
+        state = create_board_state(go)
+        self.assertEqual(state[15, 3, 3], 1)
+
+        go.make_move(3, 4)
+        state = create_board_state(go)
+        self.assertEqual(state[14, 3, 3], 1)
+        self.assertEqual(state[14, 3, 4], 1)
 
 if __name__ == "__main__":
     unittest.main()

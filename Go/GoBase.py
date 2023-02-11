@@ -1,8 +1,19 @@
-from Go.util import find_adjacent_cells, find_stone_group
+from Go.util import find_stone_group, within_board
 
 
 class GoBase:
+    adjacent_cache = {}
+    for x in range(19):
+        for y in range(19):
+            neighbors = [
+                (x, y)
+                for (x, y) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+                if within_board((x, y))
+            ]
+            adjacent_cache[(x, y)] = neighbors
+
     def display(self):
+        print()
         for row in range(19):
             for col in range(19):
                 print(self.board[row, col], end="")
@@ -12,9 +23,9 @@ class GoBase:
     def is_legal(self, row, col):
         if self.board[row, col] != 0:
             return False
-        if self.is_suicide(row, col):
-            return False
         if self.ko == (row, col):
+            return False
+        if self.is_suicide(row, col):
             return False
         return True
 
@@ -22,9 +33,8 @@ class GoBase:
         game_copy = MiniGo(self)
         game_copy.make_move(row, col)
 
-        groups = game_copy.find_groups()
-        cur_stone_group = find_stone_group(row, col, groups)
-        dead_groups = game_copy.find_dead_groups(groups)
+        cur_stone_group = find_stone_group(row, col, self.groups_cache)
+        dead_groups = game_copy.find_dead_groups()
 
         # Only cur stone group is dead, suicide
         if len(dead_groups) == 1 and cur_stone_group in dead_groups:
@@ -48,7 +58,7 @@ class GoBase:
                     frontier = [(row, col)]
                     while len(frontier) != 0:
                         (x, y) = frontier.pop()
-                        for (r, c) in find_adjacent_cells(x, y):
+                        for (r, c) in GoBase.adjacent_cache[(x, y)]:
                             # Same colour and not visited
                             if (
                                 self.board[r, c] == self.board[x, y]
@@ -62,9 +72,9 @@ class GoBase:
 
         return groups
 
-    def find_dead_groups(self, groups):
+    def find_dead_groups(self):
         dead_groups = []
-        for idx, group in enumerate(groups):
+        for idx, group in enumerate(self.groups_cache):
             if self.find_group_liberty(group) == 0:
                 dead_groups.append(idx)
 
@@ -75,32 +85,31 @@ class GoBase:
         visited = set()
 
         for (row, col) in group:
-            for (x, y) in find_adjacent_cells(row, col):
+            for (x, y) in GoBase.adjacent_cache[(row, col)]:
                 if self.board[x, y] == 0 and not (x, y) in visited:
                     visited.add((x, y))
                     liberty += 1
 
         return liberty
 
-    def remove_dead_groups(self, groups, cur_stone_group, dead_groups):
+    def remove_dead_groups(self, cur_stone_group, dead_groups):
         captured = 0
         for idx in dead_groups:
             if idx != cur_stone_group:
-                for (row, col) in groups[idx]:
+                for (row, col) in self.groups_cache[idx]:
                     self.board[row, col] = 0
                     captured += 1
 
         return captured
 
     def get_stone_lib_pos(self, row, col):
-        groups = self.find_groups()
-        group = groups[find_stone_group(row, col, groups)]
+        group = self.groups_cache[find_stone_group(row, col, self.groups_cache)]
 
         liberty = []
         visited = set()
 
         for (row, col) in group:
-            for (x, y) in find_adjacent_cells(row, col):
+            for (x, y) in GoBase.adjacent_cache[(row, col)]:
                 if self.board[x, y] == 0 and not (x, y) in visited:
                     visited.add((x, y))
                     liberty.append((x, y))
@@ -160,7 +169,7 @@ class GoBase:
             # Check if any hunter groups adjacent to the prey groups
             # are in atari.  Capturing these groups are potential escapes.
             for x, y in group:
-                for (nx, ny) in find_adjacent_cells(x, y):
+                for (nx, ny) in GoBase.adjacent_cache[(x, y)]:
                     if game_copy.board[nx, ny] == hunter_player:
                         __, n_lib_pos = game_copy.get_stone_lib_pos(nx, ny)
                         if len(n_lib_pos) == 1:
@@ -272,6 +281,8 @@ class MiniGo(GoBase):
 
         self.ko = game.ko
 
+        self.groups_cache = None
+
     def make_move(self, row, col):
         # Update move to board
         self.board[row, col] = self.turn
@@ -283,12 +294,12 @@ class MiniGo(GoBase):
         self.turn = 2 if self.turn == 1 else 1
 
         # Find groups, current stones's group and dead groups
-        groups = self.find_groups()
-        cur_stone_group = find_stone_group(row, col, groups)
-        dead_groups = self.find_dead_groups(groups)
+        self.groups_cache = self.find_groups()
+        cur_stone_group = find_stone_group(row, col, self.groups_cache)
+        dead_groups = self.find_dead_groups()
 
         # Remove dead groups from board
-        num_captured = self.remove_dead_groups(groups, cur_stone_group, dead_groups)
+        num_captured = self.remove_dead_groups(cur_stone_group, dead_groups)
 
         # Check for KO
         if num_captured == 1:
@@ -303,12 +314,17 @@ class MiniGo(GoBase):
                 captured_idx = dead_groups[0]
 
                 # Get dead stone position
-                dead_stone = groups[captured_idx][0]
+                dead_stone = self.groups_cache[captured_idx][0]
 
                 # Get played stone's group positions
-                cur_group = groups[cur_stone_group]
+                cur_group = self.groups_cache[cur_stone_group]
 
                 # Only if the current stone group only has 1 stone and only has one liberty
                 # is considered a KO situation
                 if len(cur_group) == 1 and self.find_group_liberty(cur_group) == 1:
                     self.ko = dead_stone
+
+        # Update groups cache
+        for index in sorted(dead_groups, reverse=True):
+            if index != cur_stone_group:
+                del self.groups_cache[index]
