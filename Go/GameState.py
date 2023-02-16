@@ -68,10 +68,14 @@ class GameState:
         self.previous_hashes = set()
 
     def display(self):
+        board_str = ""
         for i in range(self.size):
             for j in range(self.size):
-                print(self.board[i, j], end="")
-            print()
+                if self.board[i, j] == -1:
+                    board_str += "2"
+                else:
+                    board_str += str(self.board[i, j])
+        return board_str
 
     def get_group(self, position):
         """Get the group of connected same-color stones to the given position
@@ -354,14 +358,13 @@ class GameState:
         move is assumed not to be a ladder capture.
 
         """
-
         # ignore illegal moves
         if not self.is_legal(action):
             return False
 
-        # if we haven't found a capture by a certain number of moves, assume it's worked.
+        # if we haven't found a capture by a certain number of moves, assume it's not capture.
         if remaining_attempts <= 0:
-            return True
+            return False
 
         hunter_player = self.current_player
         prey_player = -self.current_player

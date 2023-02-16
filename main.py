@@ -1,6 +1,6 @@
 import argparse
 
-from data_processing.process import process
+from processing.process import process
 
 
 def main():
@@ -13,8 +13,8 @@ def main():
 
     args = parser.parse_args()
     if args.task == "preprocess":
-        process(9800, 10000)
+        process(0, 0)
 
 
 if __name__ == "__main__":
-    main()
+    process(135800, 136000)

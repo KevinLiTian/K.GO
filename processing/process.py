@@ -153,10 +153,6 @@ def process(START, END):
         count += 1
         print(f"{count}/{END - START} games processed")
 
-    path = f"./dataset/{START}_{END}"
-    if not os.path.exists(path):
-        os.makedirs(path)
-
     # Save to .npz
-    np.savez_compressed(f"{path}/board_states", array=board_states_storage)
-    np.savez_compressed(f"{path}/moves", array=moves_storage)
+    path = f"./dataset/{START}_{END}.npz"
+    np.savez_compressed(path, board_states=board_states_storage, moves=moves_storage)
