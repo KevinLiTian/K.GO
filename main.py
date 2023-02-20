@@ -1,6 +1,7 @@
 import argparse
 
-from processing.process import process
+from training.process import process
+from training.policy_train import train
 
 
 def main():
@@ -13,8 +14,10 @@ def main():
 
     args = parser.parse_args()
     if args.task == "preprocess":
-        process(0, 0)
+        process(0, 160000)
+    elif args.task == "train":
+        train()
 
 
 if __name__ == "__main__":
-    process(135800, 136000)
+    main()
