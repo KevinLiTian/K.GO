@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn import CrossEntropyLoss
@@ -91,8 +91,8 @@ def train():
 
                 # Check accuracy
                 # Find the indices of the maximum values along the second dimension
-                outputs = F.softmax(outputs, dim=1)
-                _, preds = torch.max(outputs, dim=1)
+                output = F.softmax(output, dim=1)
+                _, preds = torch.max(output, dim=1)
 
                 # Check if the maximum values match the corresponding labels
                 matches = torch.eq(preds, moves)
@@ -103,7 +103,9 @@ def train():
                 accuracy.append(acc)
 
             file_count += 1
-            print(f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}")
+            print(
+                f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}, Accuracy: {acc}"
+            )
 
             if file_count % 100 == 0:
                 checkpoint = {
