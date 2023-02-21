@@ -38,6 +38,4 @@ class GoPolicyNetwork(nn.Module):
         # Bias
         x = x + self.bias
 
-        # Softmax activation
-        x = F.softmax(x, dim=1)
         return x
