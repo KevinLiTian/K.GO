@@ -60,6 +60,7 @@ def train():
 
     remaining_boards, remaining_moves = [], []
     for epoch in range(NUM_EPOCH):
+        file_count = 0
         for file in DATA_FILES:
             (
                 board_states_batch,
@@ -71,21 +72,36 @@ def train():
             )
 
             for board_states, moves in zip(board_states_batch, moves_batch):
+                board_states, moves = board_states.to(device), moves.to(device)
                 output = model(board_states)
                 loss = criterion(output, moves.long())
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
                 scheduler.step()
-            
-            print(f"Finished training on {file}, Loss: {loss}")
-        print(f"Epoch {epoch}/{NUM_EPOCH}")
-        
+
+            file_count += 1
+            print(f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}")
+
+            if file % 100 == 0:
+                checkpoint = {
+                    "file_count": file_count,
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "scheduler_state_dict": scheduler.state_dict(),
+                    "loss": loss,
+                }
+                torch.save(
+                    checkpoint, f"./checkpoints/checkpoint_{epoch}_{file_count}.pth"
+                )
+
+        print(f"Epoch {epoch + 1}/{NUM_EPOCH}")
         checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'scheduler_state_dict': scheduler.state_dict(),
-            'loss': loss,
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+            "loss": loss,
         }
-        torch.save(checkpoint, f'./checkpoints/checkpoint_{epoch}.pth')
+        torch.save(checkpoint, f"./checkpoints/checkpoint_{epoch}.pth")
