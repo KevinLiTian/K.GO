@@ -16,7 +16,7 @@ def main():
     if args.task == "preprocess":
         process(0, 160000)
     elif args.task == "train":
-        train()
+        train(resume=True)
 
 
 if __name__ == "__main__":

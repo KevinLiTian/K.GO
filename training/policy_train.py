@@ -53,24 +53,55 @@ def parse_file(file_path, remaining_boards, remaining_moves):
     return board_states_batch, moves_batch, remaining_boards, remaining_moves
 
 
-def train():
+def train(resume=False):
     # Setup device (CPU/GPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
-    model = GoPolicyNetwork().to(device)
-    criterion = CrossEntropyLoss()
-    optimizer = SGD(model.parameters(), lr=LR)
-    scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
+    if resume:
+        checkpoint_dir = "./checkpoints"
+        checkpoint_files = os.listdir(checkpoint_dir)
+        latest_checkpoint = max(
+            checkpoint_files,
+            key=lambda x: os.path.getctime(os.path.join(checkpoint_dir, x)),
+        )
+        print(f"Resume from {latest_checkpoint}")
+        checkpoint = torch.load(os.path.join(checkpoint_dir, latest_checkpoint))
+
+        model = GoPolicyNetwork().to(device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        criterion = CrossEntropyLoss()
+        optimizer = SGD(model.parameters(), lr=LR)
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        accuracy = checkpoint["accuracy"]
+
+        if "file_count" in checkpoint:
+            file_count = checkpoint["file_count"]
+            cur_epoch = checkpoint["epoch"]
+        else:
+            file_count = 0
+            cur_epoch = checkpoint["epoch"] + 1
+
+    else:
+        model = GoPolicyNetwork().to(device)
+        criterion = CrossEntropyLoss()
+        optimizer = SGD(model.parameters(), lr=LR)
+        scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
+        accuracy = []
+        file_count = 0
+        cur_epoch = 0
 
     # Training utilities
     remaining_boards, remaining_moves = [], []
-    accuracy = []
 
     # Main train loop
-    for epoch in range(NUM_EPOCH):
-        file_count = 0
-        for file in DATA_FILES:
+    print(f"Start epoch {cur_epoch}, file count {file_count}")
+    for epoch in range(cur_epoch, NUM_EPOCH):
+        if file_count == len(DATA_FILES):
+            file_count = 0
+        for file in DATA_FILES[file_count:]:
             (
                 board_states_batch,
                 moves_batch,
@@ -89,18 +120,18 @@ def train():
                 optimizer.zero_grad()
                 scheduler.step()
 
-                # Check accuracy
-                # Find the indices of the maximum values along the second dimension
-                output = F.softmax(output, dim=1)
-                _, preds = torch.max(output, dim=1)
+            # Check accuracy
+            # Find the indices of the maximum values along the second dimension
+            output = F.softmax(output, dim=1)
+            _, preds = torch.max(output, dim=1)
 
-                # Check if the maximum values match the corresponding labels
-                matches = torch.eq(preds, moves)
+            # Check if the maximum values match the corresponding labels
+            matches = torch.eq(preds, moves)
 
-                # Count the number of matches
-                num_matches = torch.sum(matches)
-                acc = num_matches / BATCH_SIZE
-                accuracy.append(acc)
+            # Count the number of matches
+            num_matches = torch.sum(matches)
+            acc = num_matches / BATCH_SIZE
+            accuracy.append(acc)
 
             file_count += 1
             print(
