@@ -2,35 +2,44 @@ import os
 
 import torch
 import torch.nn.functional as F
-import numpy as np
+from torch.nn import CrossEntropyLoss
 
 from networks.policy import GoPolicyNetwork
+from training.policy_train import parse_file
 
-# Data directory
-DATA_FILES = [f"{i}_{i+200}.npz" for i in range(0, 160000, 200)]
+CHECKPOINT_DIR = "./checks"
 
 
 def policy_evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    check = torch.load("./checkpoints/checkpoint_0.pth")
+    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_0_100.pth")
 
-    data = np.load(os.path.join("./dataset", DATA_FILES[0]))
-    board_states = torch.from_numpy(data["board_states"][:1000, :48]).to(device)
-    moves = torch.from_numpy(data["moves"][:1000]).long().to(device)
+    board_states, moves, __, __ = parse_file("./dataset/val/160000_160200.npz", [], [])
 
     model = GoPolicyNetwork().to(device)
     model.load_state_dict(check["model_state_dict"])
 
-    output = model(board_states)
+    criterion = CrossEntropyLoss()
 
-    # Check accuracy
-    # Find the indices of the maximum values along the second dimension
-    output = F.softmax(output, dim=1)
-    _, preds = torch.max(output, dim=1)
+    correct_count = 0
+    total_loss = 0
+    total_epoch = 0
+    for board, move in zip(board_states, moves):
+        board, move = board.to(device), move.to(device)
+        output = model(board)
+        total_loss += float(criterion(output, move.long()))
 
-    # Check if the maximum values match the corresponding labels
-    matches = torch.eq(preds, moves)
+        # Check accuracy
+        # Find the indices of the maximum values along the second dimension
+        output = F.softmax(output, dim=1)
+        _, preds = torch.max(output, dim=1)
 
-    # Count the number of matches
-    num_matches = torch.sum(matches)
-    print(num_matches / len(board_states))
+        # Check if the maximum values match the corresponding labels
+        matches = torch.eq(preds, move)
+
+        # Count the number of matches
+        correct_count += torch.sum(matches)
+        total_epoch += 1
+
+    avg_loss = total_loss / total_epoch
+    print(f"Loss: {avg_loss}, Accuracy: {correct_count / len(board_states)}")

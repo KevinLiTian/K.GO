@@ -17,6 +17,9 @@ LR = 0.003
 # Data directory
 DATA_FILES = [f"{i}_{i+200}.npz" for i in range(0, 160000, 200)]
 
+# Checkpoint directory
+CHECKPOINT_DIR = "./checks"
+
 
 def parse_file(file_path, remaining_boards, remaining_moves):
     """Parse a .npz file into batches of tensors"""
@@ -59,14 +62,13 @@ def train(resume=False):
     print("Using device:", device)
 
     if resume:
-        checkpoint_dir = "./checkpoints"
-        checkpoint_files = os.listdir(checkpoint_dir)
+        checkpoint_files = os.listdir(CHECKPOINT_DIR)
         latest_checkpoint = max(
             checkpoint_files,
-            key=lambda x: os.path.getctime(os.path.join(checkpoint_dir, x)),
+            key=lambda x: os.path.getctime(os.path.join(CHECKPOINT_DIR, x)),
         )
         print(f"Resume from {latest_checkpoint}")
-        checkpoint = torch.load(os.path.join(checkpoint_dir, latest_checkpoint))
+        checkpoint = torch.load(os.path.join(CHECKPOINT_DIR, latest_checkpoint))
 
         model = GoPolicyNetwork().to(device)
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -148,9 +150,7 @@ def train(resume=False):
                     "loss": loss,
                     "accuracy": accuracy,
                 }
-                torch.save(
-                    checkpoint, f"./checkpoints/checkpoint_{epoch}_{file_count}.pth"
-                )
+                torch.save(checkpoint, f"./checks/checkpoint_{epoch}_{file_count}.pth")
 
         print(f"Epoch {epoch + 1}/{NUM_EPOCH}")
         checkpoint = {
@@ -161,4 +161,4 @@ def train(resume=False):
             "loss": loss,
             "accuracy": accuracy,
         }
-        torch.save(checkpoint, f"./checkpoints/checkpoint_{epoch}.pth")
+        torch.save(checkpoint, f"./checks/checkpoint_{epoch}.pth")
