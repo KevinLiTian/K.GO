@@ -7,12 +7,12 @@ from torch.nn import CrossEntropyLoss
 from networks.policy import GoPolicyNetwork
 from training.policy_train import parse_file
 
-CHECKPOINT_DIR = "./checks"
+CHECKPOINT_DIR = "./checkpoints"
 
 
 def policy_evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_0_100.pth")
+    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_1_300.pth")
 
     board_states, moves, __, __ = parse_file("./dataset/val/160000_160200.npz", [], [])
 

@@ -2,16 +2,16 @@ import torch
 
 from networks.policy import GoPolicyNetwork
 
-CHECKPOINT_DIR = "./checks"
+CHECKPOINT_DIR = "./checkpoints"
 
 net1 = GoPolicyNetwork()
 net1.load_state_dict(
-    torch.load(f"{CHECKPOINT_DIR}/checkpoint_0_100.pth")["model_state_dict"]
+    torch.load(f"{CHECKPOINT_DIR}/checkpoint_1_200.pth")["model_state_dict"]
 )
 
 net2 = GoPolicyNetwork()
 net2.load_state_dict(
-    torch.load(f"{CHECKPOINT_DIR}/checkpoint_0_101.pth")["model_state_dict"]
+    torch.load(f"{CHECKPOINT_DIR}/checkpoint_1_300.pth")["model_state_dict"]
 )
 
 

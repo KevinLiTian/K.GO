@@ -18,7 +18,17 @@ LR = 0.003
 DATA_FILES = [f"{i}_{i+200}.npz" for i in range(0, 160000, 200)]
 
 # Checkpoint directory
-CHECKPOINT_DIR = "./checks"
+CHECKPOINT_DIR = "./checkpoints"
+
+
+def get_accuracy(outputs, labels):
+    _, preds = torch.max(outputs, dim=1)
+
+    # Check if the maximum values match the corresponding labels
+    matches = torch.eq(preds, labels)
+
+    # Count the number of matches
+    return torch.sum(matches) / BATCH_SIZE
 
 
 def parse_file(file_path, remaining_boards, remaining_moves):
@@ -45,7 +55,7 @@ def parse_file(file_path, remaining_boards, remaining_moves):
         board_states_batch.append(
             torch.from_numpy(board_states[start_idx:end_idx, :48])
         )
-        moves_batch.append(torch.from_numpy(moves[start_idx:end_idx]))
+        moves_batch.append(torch.from_numpy(moves[start_idx:end_idx]).long())
 
     if board_states.shape[0] % BATCH_SIZE != 0:
         remaining_boards = board_states[num_batches * BATCH_SIZE :]
@@ -114,31 +124,18 @@ def train(resume=False):
             )
 
             for board_states, moves in zip(board_states_batch, moves_batch):
+                optimizer.zero_grad()
                 board_states, moves = board_states.to(device), moves.to(device)
-                output = model(board_states)
-                loss = criterion(output, moves.long())
+
+                outputs = model(board_states)
+                loss = criterion(outputs, moves)
+
                 loss.backward()
                 optimizer.step()
-                optimizer.zero_grad()
                 scheduler.step()
 
-            # Check accuracy
-            # Find the indices of the maximum values along the second dimension
-            output = F.softmax(output, dim=1)
-            _, preds = torch.max(output, dim=1)
-
-            # Check if the maximum values match the corresponding labels
-            matches = torch.eq(preds, moves)
-
-            # Count the number of matches
-            num_matches = torch.sum(matches)
-            acc = num_matches / BATCH_SIZE
-            accuracy.append(acc)
-
             file_count += 1
-            print(
-                f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}, Accuracy: {acc}"
-            )
+            print(f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}")
 
             if file_count % 100 == 0:
                 checkpoint = {
@@ -147,18 +144,21 @@ def train(resume=False):
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "scheduler_state_dict": scheduler.state_dict(),
-                    "loss": loss,
                     "accuracy": accuracy,
                 }
-                torch.save(checkpoint, f"./checks/checkpoint_{epoch}_{file_count}.pth")
+                torch.save(
+                    checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}_{file_count}.pth"
+                )
 
-        print(f"Epoch {epoch + 1}/{NUM_EPOCH}")
+        acc = get_accuracy(outputs, moves)
+        accuracy.append(acc)
+
+        print(f"Epoch {epoch + 1}/{NUM_EPOCH} finished | Accuracy: {acc}")
         checkpoint = {
             "epoch": epoch,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
-            "loss": loss,
             "accuracy": accuracy,
         }
-        torch.save(checkpoint, f"./checks/checkpoint_{epoch}.pth")
+        torch.save(checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}.pth")
