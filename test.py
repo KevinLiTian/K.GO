@@ -6,12 +6,12 @@ CHECKPOINT_DIR = "./checkpoints"
 
 net1 = GoPolicyNetwork()
 net1.load_state_dict(
-    torch.load(f"{CHECKPOINT_DIR}/checkpoint_1_200.pth")["model_state_dict"]
+    torch.load(f"{CHECKPOINT_DIR}/checkpoint_0.pth")["model_state_dict"]
 )
 
 net2 = GoPolicyNetwork()
 net2.load_state_dict(
-    torch.load(f"{CHECKPOINT_DIR}/checkpoint_1_300.pth")["model_state_dict"]
+    torch.load(f"{CHECKPOINT_DIR}/checkpoint_1.pth")["model_state_dict"]
 )
 
 
