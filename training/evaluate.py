@@ -12,9 +12,9 @@ CHECKPOINT_DIR = "./checkpoints"
 
 def policy_evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_1.pth")
+    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_2_100.pth")
 
-    board_states, moves, __, __ = parse_file("./dataset/val/160000_160200.npz", [], [])
+    board_states, moves, __, __ = parse_file("./dataset/0_200.npz", [], [])
 
     model = GoPolicyNetwork().to(device)
     model.load_state_dict(check["model_state_dict"])
