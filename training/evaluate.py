@@ -12,9 +12,9 @@ CHECKPOINT_DIR = "./checkpoints"
 
 def policy_evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_2_100.pth")
+    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_2_400.pth")
 
-    board_states, moves, __, __ = parse_file("./dataset/0_200.npz", [], [])
+    board_states, moves, __, __ = parse_file("./dataset/val/160000_160200.npz", [], [])
 
     model = GoPolicyNetwork().to(device)
     model.load_state_dict(check["model_state_dict"])
@@ -30,16 +30,10 @@ def policy_evaluate():
         total_loss += float(criterion(output, move.long()))
 
         # Check accuracy
-        # Find the indices of the maximum values along the second dimension
-        output = F.softmax(output, dim=1)
-        _, preds = torch.max(output, dim=1)
-
-        # Check if the maximum values match the corresponding labels
-        matches = torch.eq(preds, move)
-
-        # Count the number of matches
-        correct_count += torch.sum(matches)
+        index_of_max = output.argmax(axis=1)
+        match = index_of_max == move
+        correct_count += match.sum()
         total_epoch += 1
 
     avg_loss = total_loss / total_epoch
-    print(f"Loss: {avg_loss}, Accuracy: {correct_count / len(board_states)}")
+    print(f"Loss: {avg_loss}, Accuracy: {correct_count / (len(board_states) * 16)}")

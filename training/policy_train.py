@@ -21,16 +21,6 @@ DATA_FILES = [f"{i}_{i+200}.npz" for i in range(0, 160000, 200)]
 CHECKPOINT_DIR = "./checkpoints"
 
 
-def get_accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim=1)
-
-    # Check if the maximum values match the corresponding labels
-    matches = torch.eq(preds, labels)
-
-    # Count the number of matches
-    return torch.sum(matches) / BATCH_SIZE
-
-
 def parse_file(file_path, remaining_boards, remaining_moves):
     """Parse a .npz file into batches of tensors"""
     data = np.load(file_path)
@@ -87,7 +77,6 @@ def train(resume=False):
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-        accuracy = checkpoint["accuracy"]
 
         if "file_count" in checkpoint:
             file_count = checkpoint["file_count"]
@@ -101,7 +90,6 @@ def train(resume=False):
         criterion = CrossEntropyLoss()
         optimizer = SGD(model.parameters(), lr=LR)
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
-        accuracy = []
         file_count = 0
         cur_epoch = 0
 
@@ -144,21 +132,16 @@ def train(resume=False):
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "scheduler_state_dict": scheduler.state_dict(),
-                    "accuracy": accuracy,
                 }
                 torch.save(
                     checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}_{file_count}.pth"
                 )
 
-        acc = get_accuracy(outputs, moves)
-        accuracy.append(acc)
-
-        print(f"Epoch {epoch + 1}/{NUM_EPOCH} finished | Accuracy: {acc}")
+        print(f"Epoch {epoch + 1}/{NUM_EPOCH} finished")
         checkpoint = {
             "epoch": epoch,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
-            "accuracy": accuracy,
         }
         torch.save(checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}.pth")
