@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+SOFTMAX_TEMPERATURE = 0.67
+
 
 class GoPolicyNetwork(nn.Module):
     def __init__(self):
@@ -39,6 +41,6 @@ class GoPolicyNetwork(nn.Module):
         x = x + self.bias
 
         # Softmax activation
-        x = F.softmax(x, dim=1)
+        x = F.softmax(x / SOFTMAX_TEMPERATURE, dim=1)
 
         return x

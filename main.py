@@ -17,7 +17,7 @@ def main():
     if args.task == "preprocess":
         process(0, 160000)
     elif args.task == "train":
-        train(resume=True)
+        train(resume=False)
     elif args.task == "eval":
         policy_evaluate()
 

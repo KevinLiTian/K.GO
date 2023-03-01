@@ -1,8 +1,9 @@
 import os
+import random
+from collections import deque
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn import CrossEntropyLoss
@@ -19,6 +20,38 @@ DATA_FILES = [f"{i}_{i+200}.npz" for i in range(0, 160000, 200)]
 
 # Checkpoint directory
 CHECKPOINT_DIR = "./checkpoints"
+
+BOARD_TRANSFORMATIONS = [
+    lambda feature: feature,
+    lambda feature: np.rot90(feature, 1),
+    lambda feature: np.rot90(feature, 2),
+    lambda feature: np.rot90(feature, 3),
+    lambda feature: np.fliplr(feature),
+    lambda feature: np.flipud(feature),
+    lambda feature: np.transpose(feature),
+    lambda feature: np.fliplr(np.rot90(feature, 1)),
+]
+
+
+def one_hot_encode(value, transform):
+    encode = np.zeros((1, 361), dtype=np.float32)
+    encode[0, int(value)] = 1
+    encode = encode.reshape((19, 19))
+    encode = transform(encode).reshape((1, 361))
+    return encode
+
+
+def generate_batch(board_states, moves):
+    states, actions = [], []
+    for board_state, move in zip(board_states, moves):
+        rand_int = random.randint(0, 7)
+        transform = BOARD_TRANSFORMATIONS[rand_int]
+        states.append(np.array([transform(plane) for plane in board_state]))
+        actions.append(one_hot_encode(move, transform))
+
+    states = torch.from_numpy(np.stack(states, axis=0))
+    actions = torch.from_numpy(np.concatenate(actions, axis=0))
+    return states, actions
 
 
 def parse_file(file_path, remaining_boards, remaining_moves):
@@ -42,10 +75,11 @@ def parse_file(file_path, remaining_boards, remaining_moves):
         start_idx = i * BATCH_SIZE
         end_idx = start_idx + BATCH_SIZE
 
-        board_states_batch.append(
-            torch.from_numpy(board_states[start_idx:end_idx, :48])
+        states, actions = generate_batch(
+            board_states[start_idx:end_idx, :48], moves[start_idx:end_idx]
         )
-        moves_batch.append(torch.from_numpy(moves[start_idx:end_idx]).long())
+        board_states_batch.append(states)
+        moves_batch.append(actions)
 
     if board_states.shape[0] % BATCH_SIZE != 0:
         remaining_boards = board_states[num_batches * BATCH_SIZE :]
@@ -78,6 +112,8 @@ def train(resume=False):
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
+        grad_deque = checkpoint["grad_deque"]
+
         if "file_count" in checkpoint:
             file_count = checkpoint["file_count"]
             cur_epoch = checkpoint["epoch"]
@@ -90,6 +126,9 @@ def train(resume=False):
         criterion = CrossEntropyLoss()
         optimizer = SGD(model.parameters(), lr=LR)
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
+
+        grad_deque = deque(maxlen=100)
+
         file_count = 0
         cur_epoch = 0
 
@@ -112,13 +151,24 @@ def train(resume=False):
             )
 
             for board_states, moves in zip(board_states_batch, moves_batch):
-                optimizer.zero_grad()
+                # Forward pass
                 board_states, moves = board_states.to(device), moves.to(device)
-
                 outputs = model(board_states)
                 loss = criterion(outputs, moves)
 
+                # Backward pass
+                optimizer.zero_grad()
                 loss.backward()
+
+                # Discard the oldest gradients and subtract them from the current gradients
+                grad_deque.append([param.grad.clone() for param in model.parameters()])
+                if len(grad_deque) == 100:
+                    oldest_grad = grad_deque.popleft()
+                    for i, param in enumerate(model.parameters()):
+                        if oldest_grad[i] is not None:
+                            param.grad -= oldest_grad[i]
+
+                # Steps
                 optimizer.step()
                 scheduler.step()
 
@@ -132,6 +182,7 @@ def train(resume=False):
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "scheduler_state_dict": scheduler.state_dict(),
+                    "grad_deque": grad_deque,
                 }
                 torch.save(
                     checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}_{file_count}.pth"
@@ -143,5 +194,6 @@ def train(resume=False):
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
+            "grad_deque": grad_deque,
         }
         torch.save(checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}.pth")
