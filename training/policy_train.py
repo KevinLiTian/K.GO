@@ -1,12 +1,11 @@
 import os
 import random
-from collections import deque
 
 import numpy as np
 import torch
 from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
-from torch.nn import CrossEntropyLoss
+from torch.nn import NLLLoss
 
 from networks.policy import GoPolicyNetwork
 
@@ -38,7 +37,7 @@ def one_hot_encode(value, transform):
     encode[0, int(value)] = 1
     encode = encode.reshape((19, 19))
     encode = transform(encode).reshape((1, 361))
-    return encode
+    return np.argmax(encode, axis=1)
 
 
 def generate_batch(board_states, moves):
@@ -106,13 +105,11 @@ def train(resume=False):
 
         model = GoPolicyNetwork().to(device)
         model.load_state_dict(checkpoint["model_state_dict"])
-        criterion = CrossEntropyLoss()
+        criterion = NLLLoss()
         optimizer = SGD(model.parameters(), lr=LR)
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-
-        grad_deque = checkpoint["grad_deque"]
 
         if "file_count" in checkpoint:
             file_count = checkpoint["file_count"]
@@ -123,11 +120,9 @@ def train(resume=False):
 
     else:
         model = GoPolicyNetwork().to(device)
-        criterion = CrossEntropyLoss()
+        criterion = NLLLoss()
         optimizer = SGD(model.parameters(), lr=LR)
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
-
-        grad_deque = deque(maxlen=100)
 
         file_count = 0
         cur_epoch = 0
@@ -154,19 +149,11 @@ def train(resume=False):
                 # Forward pass
                 board_states, moves = board_states.to(device), moves.to(device)
                 outputs = model(board_states)
-                loss = criterion(outputs, moves)
+                loss = criterion(torch.log(outputs), moves)
 
                 # Backward pass
                 optimizer.zero_grad()
                 loss.backward()
-
-                # Discard the oldest gradients and subtract them from the current gradients
-                grad_deque.append([param.grad.clone() for param in model.parameters()])
-                if len(grad_deque) == 100:
-                    oldest_grad = grad_deque.popleft()
-                    for i, param in enumerate(model.parameters()):
-                        if oldest_grad[i] is not None:
-                            param.grad -= oldest_grad[i]
 
                 # Steps
                 optimizer.step()
@@ -175,14 +162,13 @@ def train(resume=False):
             file_count += 1
             print(f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}")
 
-            if file_count % 100 == 0:
+            if file_count % 50 == 0:
                 checkpoint = {
                     "file_count": file_count,
                     "epoch": epoch,
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "scheduler_state_dict": scheduler.state_dict(),
-                    "grad_deque": grad_deque,
                 }
                 torch.save(
                     checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}_{file_count}.pth"
@@ -194,6 +180,5 @@ def train(resume=False):
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
-            "grad_deque": grad_deque,
         }
         torch.save(checkpoint, f"{CHECKPOINT_DIR}/checkpoint_{epoch}.pth")
