@@ -12,7 +12,7 @@ GRAPH_FILE = "./training/train.csv"
 
 def policy_evaluate():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_0_650.pth")
+    check = torch.load(f"{CHECKPOINT_DIR}/checkpoint_0.pth")
 
     train_board_states, train_moves, __, __ = parse_file("./dataset/0_200.npz", [], [])
     val_board_states, val_moves, __, __ = parse_file(
