@@ -2,7 +2,7 @@ import argparse
 
 from training.process import process
 from training.policy_train import train
-from training.evaluate import policy_evaluate
+from training.evaluate import policy_evaluate, policy_valuate_all, plot_policy_curves
 
 
 def main():
@@ -19,7 +19,11 @@ def main():
     elif args.task == "train":
         train(resume=True)
     elif args.task == "eval":
-        policy_evaluate()
+        policy_evaluate("./checkpoints/checkpoint_2.pth")
+    elif args.task == "evalall":
+        policy_valuate_all()
+    elif args.task == "plot":
+        plot_policy_curves()
 
 
 if __name__ == "__main__":

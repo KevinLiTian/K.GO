@@ -162,7 +162,7 @@ def train(resume=False):
             file_count += 1
             print(f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}")
 
-            if file_count % 50 == 0:
+            if file_count % 50 == 0 and file_count != 800:
                 checkpoint = {
                     "file_count": file_count,
                     "epoch": epoch,
