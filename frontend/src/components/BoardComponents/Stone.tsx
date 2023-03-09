@@ -24,7 +24,7 @@ const Stone = ({ color }: StoneProps) => {
       <circle
         cx="15.0"
         cy="15.0"
-        r="12"
+        r="13"
         fill={color}
         filter="url(#stoneFilter)"
       />

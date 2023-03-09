@@ -14,9 +14,10 @@ import BoardGrid from './BoardComponents/BoardGrid';
 import Stone from './BoardComponents/Stone';
 import StoneShadow from './BoardComponents/StoneShadow';
 import StoneHover from './BoardComponents/StoneHover';
+import { boardProps } from '../utils/Interfaces';
 
-const Board = () => {
-  const [board, setBoard] = useState(() => createBoard());
+const Board = ({ initial }: boardProps) => {
+  const [board, setBoard] = useState(initial ? initial : () => createBoard());
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
     col: number;
@@ -27,9 +28,9 @@ const Board = () => {
   // Game ID
   const id = useRef(null);
 
-  useEffect(() => {
-    API.post('/setup').then((res) => (id.current = res.data.id));
-  }, []);
+  // useEffect(() => {
+  //   API.post('/setup').then((res) => (id.current = res.data.id));
+  // }, []);
 
   function handleMouseOver(row: number, col: number) {
     setHoveredCell({ row, col });
@@ -70,20 +71,21 @@ const Board = () => {
 
     // Update board and switch player
     setBoard(newBoard);
+    setPlayer((prev) => (prev == 1 ? 2 : 1));
 
     // AI make move
-    API.post('/greedypolicy', { id: id.current, move: [row, col] }).then(
-      (res) => {
-        const move = res.data.move;
-        const cpBoard = copyBoard(newBoard);
-        cpBoard[move[0]][move[1]] = 2;
-        setBoard(cpBoard);
-      }
-    );
+    // API.post('/greedypolicy', { id: id.current, move: [row, col] }).then(
+    //   (res) => {
+    //     const move = res.data.move;
+    //     const cpBoard = copyBoard(newBoard);
+    //     cpBoard[move[0]][move[1]] = 2;
+    //     setBoard(cpBoard);
+    //   }
+    // );
   }
 
   return (
-    <table className="border-[10px] border-[#533939] scale-[120%]">
+    <table className="border-[5px] border-[#533939]">
       <tbody>
         {board.map((row, rowIndex) => (
           <tr key={rowIndex}>

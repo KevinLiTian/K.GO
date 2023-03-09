@@ -14,3 +14,7 @@ export interface BoardCornerProps {
 export interface StoneProps {
   color: string;
 }
+
+export interface boardProps {
+  initial?: number[][];
+}
