@@ -17,4 +17,10 @@ export interface StoneProps {
 
 export interface boardProps {
   initial?: number[][];
+  settings?: {
+    id?: string;
+    mode: string;
+    api?: string | null;
+    turn?: string | null;
+  };
 }

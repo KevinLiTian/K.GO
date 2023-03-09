@@ -37,7 +37,7 @@ def setup():
 @app.route("/greedypolicy", methods=["POST"])
 def greedy_policy():
     id = request.json["id"]
-    client_move = request.json["move"]
+    client_move = request.json.get("move")
 
     api = f"https://bohyly1o.api.sanity.io/v2021-06-07/data/query/production?query=*[_id=='{id}']"
     headers = {
@@ -51,14 +51,17 @@ def greedy_policy():
     for move in history:
         row, col = move["row"], move["col"]
         board.do_move((row, col))
-    board.do_move((client_move[0], client_move[1]))
+
+    if client_move is not None:
+        board.do_move((client_move[0], client_move[1]))
 
     player = GreedyPolicyPlayer(checkpoint="./checkpoints/checkpoint_2.pth")
     player_move = player.get_move(board)
 
-    history.append(
-        {"_key": str(uuid.uuid4()), "row": client_move[0], "col": client_move[1]}
-    )
+    if client_move is not None:
+        history.append(
+            {"_key": str(uuid.uuid4()), "row": client_move[0], "col": client_move[1]}
+        )
     history.append(
         {"_key": str(uuid.uuid4()), "row": player_move[0], "col": player_move[1]}
     )

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import API from '../api';
 
 import {
@@ -16,21 +16,32 @@ import StoneShadow from './BoardComponents/StoneShadow';
 import StoneHover from './BoardComponents/StoneHover';
 import { boardProps } from '../utils/Interfaces';
 
-const Board = ({ initial }: boardProps) => {
+const Board = ({ initial, settings }: boardProps) => {
   const [board, setBoard] = useState(initial ? initial : () => createBoard());
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
     col: number;
   } | null>(null);
-  const [player, setPlayer] = useState(1);
+  const [clientPlayer, setClientPlayer] = useState(
+    settings ? (settings.turn == '0' ? 1 : 2) : 1
+  );
+  const [AIPlayer, setAIPlayer] = useState(
+    settings ? (settings.turn == '0' ? 2 : 1) : 2
+  );
+  const [currentPlayer, setCurrentPlayer] = useState(1);
   const [previousBoards, setPreviousBoards] = useState<number[]>([]);
 
-  // Game ID
-  const id = useRef(null);
-
-  // useEffect(() => {
-  //   API.post('/setup').then((res) => (id.current = res.data.id));
-  // }, []);
+  useEffect(() => {
+    if (settings && settings.mode == '1' && settings.turn == '1') {
+      API.post(settings.api!, { id: settings.id }).then((res) => {
+        const move = res.data.move;
+        const cpBoard = copyBoard(board);
+        cpBoard[move[0]][move[1]] = 1;
+        setBoard(cpBoard);
+        setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
+      });
+    }
+  }, []);
 
   function handleMouseOver(row: number, col: number) {
     setHoveredCell({ row, col });
@@ -41,12 +52,15 @@ const Board = ({ initial }: boardProps) => {
   }
 
   async function handleMouseClick(row: number, col: number) {
+    if (settings && settings.mode == '1' && currentPlayer != clientPlayer)
+      return;
+
     // Cell occupied
     if (board[row][col] !== 0) return;
 
     // Deep copy new board for processing
     const newBoard = copyBoard(board);
-    newBoard[row][col] = player;
+    newBoard[row][col] = currentPlayer;
 
     // KO Rule (打劫)
     const hash = getBoardHash(newBoard);
@@ -71,17 +85,20 @@ const Board = ({ initial }: boardProps) => {
 
     // Update board and switch player
     setBoard(newBoard);
-    setPlayer((prev) => (prev == 1 ? 2 : 1));
+    setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
 
-    // AI make move
-    // API.post('/greedypolicy', { id: id.current, move: [row, col] }).then(
-    //   (res) => {
-    //     const move = res.data.move;
-    //     const cpBoard = copyBoard(newBoard);
-    //     cpBoard[move[0]][move[1]] = 2;
-    //     setBoard(cpBoard);
-    //   }
-    // );
+    if (settings && settings.mode == '1') {
+      // AI make move
+      API.post(settings?.api!, { id: settings?.id, move: [row, col] }).then(
+        (res) => {
+          const move = res.data.move;
+          const cpBoard = copyBoard(newBoard);
+          cpBoard[move[0]][move[1]] = AIPlayer;
+          setBoard(cpBoard);
+          setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
+        }
+      );
+    }
   }
 
   return (
@@ -104,7 +121,7 @@ const Board = ({ initial }: boardProps) => {
                     {board[rowIndex][colIndex] === 0 &&
                       rowIndex === hoveredCell?.row &&
                       colIndex === hoveredCell.col && (
-                        <StoneHover color={playerColor(player)} />
+                        <StoneHover color={playerColor(currentPlayer)} />
                       )}
                     {board[rowIndex][colIndex] !== 0 && (
                       <>
