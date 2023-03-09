@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import API from '../api';
 
 import {
   copyBoard,
@@ -23,6 +24,13 @@ const Board = () => {
   const [player, setPlayer] = useState(1);
   const [previousBoards, setPreviousBoards] = useState<number[]>([]);
 
+  // Game ID
+  const id = useRef(null);
+
+  useEffect(() => {
+    API.post('/setup').then((res) => (id.current = res.data.id));
+  }, []);
+
   function handleMouseOver(row: number, col: number) {
     setHoveredCell({ row, col });
   }
@@ -31,7 +39,7 @@ const Board = () => {
     setHoveredCell(null);
   }
 
-  function handleMouseClick(row: number, col: number) {
+  async function handleMouseClick(row: number, col: number) {
     // Cell occupied
     if (board[row][col] !== 0) return;
 
@@ -62,7 +70,16 @@ const Board = () => {
 
     // Update board and switch player
     setBoard(newBoard);
-    setPlayer(player === 1 ? 2 : 1);
+
+    // AI make move
+    API.post('/greedypolicy', { id: id.current, move: [row, col] }).then(
+      (res) => {
+        const move = res.data.move;
+        const cpBoard = copyBoard(newBoard);
+        cpBoard[move[0]][move[1]] = 2;
+        setBoard(cpBoard);
+      }
+    );
   }
 
   return (
