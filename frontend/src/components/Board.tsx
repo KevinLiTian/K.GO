@@ -22,14 +22,11 @@ const Board = ({ initial, settings }: boardProps) => {
     row: number;
     col: number;
   } | null>(null);
-  const [clientPlayer, setClientPlayer] = useState(
-    settings ? (settings.turn == '0' ? 1 : 2) : 1
-  );
-  const [AIPlayer, setAIPlayer] = useState(
-    settings ? (settings.turn == '0' ? 2 : 1) : 2
-  );
   const [currentPlayer, setCurrentPlayer] = useState(1);
   const [previousBoards, setPreviousBoards] = useState<number[]>([]);
+
+  const clientPlayer = settings ? (settings.turn == '0' ? 1 : 2) : 1;
+  const AIPlayer = settings ? (settings.turn == '0' ? 2 : 1) : 2;
 
   useEffect(() => {
     if (settings && settings.mode == '1' && settings.turn == '1') {
@@ -94,6 +91,14 @@ const Board = ({ initial, settings }: boardProps) => {
           const move = res.data.move;
           const cpBoard = copyBoard(newBoard);
           cpBoard[move[0]][move[1]] = AIPlayer;
+
+          // Get current stone group and all dead stone groups
+          const [groups, curStoneGroup, deadGroups] = getGroups(
+            cpBoard,
+            move[0],
+            move[1]
+          );
+          removeDeadGroups(cpBoard, groups, curStoneGroup, deadGroups);
           setBoard(cpBoard);
           setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
         }

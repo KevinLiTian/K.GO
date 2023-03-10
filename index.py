@@ -2,7 +2,7 @@ import os
 import uuid
 import requests
 
-from flask import Flask, send_from_directory, jsonify, session, request
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 
 from Go.GameState import GameState
@@ -55,7 +55,7 @@ def greedy_policy():
     if client_move is not None:
         board.do_move((client_move[0], client_move[1]))
 
-    player = GreedyPolicyPlayer(checkpoint="./checkpoints/checkpoint_2.pth")
+    player = GreedyPolicyPlayer(checkpoint="./networks/conv192/best.pth")
     player_move = player.get_move(board)
 
     if client_move is not None:

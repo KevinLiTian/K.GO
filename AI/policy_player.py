@@ -1,6 +1,6 @@
 import torch
 
-from networks.policy import GoPolicyNetwork
+from networks.policy import Conv192
 from training.process import create_board_state
 
 
@@ -8,7 +8,7 @@ class GreedyPolicyPlayer:
     def __init__(self, checkpoint):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.policy = GoPolicyNetwork().to(self.device)
+        self.policy = Conv192().to(self.device)
         checkpoint = torch.load(checkpoint, map_location=self.device)
         self.policy.load_state_dict(checkpoint["model_state_dict"])
 
