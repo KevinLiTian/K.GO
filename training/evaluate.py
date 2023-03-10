@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 from torch.nn import NLLLoss
 
-from networks.policy import GoPolicyNetwork
+from networks.policy import Conv192
 from training.policy_train import parse_file
 
 CHECKPOINTS_DIR = "checkpoints"
@@ -22,7 +22,7 @@ def policy_evaluate(model_path):
     print("Using device:", device)
 
     # Load model
-    model = GoPolicyNetwork().to(device)
+    model = Conv192().to(device)
     check = torch.load(model_path)
     model.load_state_dict(check["model_state_dict"])
 

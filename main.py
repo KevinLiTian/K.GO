@@ -19,7 +19,7 @@ def main():
     elif args.task == "train":
         train(resume=True)
     elif args.task == "eval":
-        policy_evaluate("./checkpoints/checkpoint_2.pth")
+        policy_evaluate("./checkpoints/checkpoint_4.pth")
     elif args.task == "evalall":
         policy_valuate_all()
     elif args.task == "plot":
