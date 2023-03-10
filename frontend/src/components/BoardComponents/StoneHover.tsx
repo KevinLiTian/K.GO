@@ -3,7 +3,7 @@ import { StoneProps } from '../../utils/Interfaces';
 const StoneHover = ({ color }: StoneProps) => {
   return (
     <g>
-      <circle cx="15" cy="15" r="12" fill={color} opacity={0.5} />
+      <circle cx="15" cy="15" r="13" fill={color} opacity={0.5} />
     </g>
   );
 };

@@ -1,10 +1,14 @@
-import { Board } from './components';
+import { Route, Routes } from 'react-router-dom';
+
+import { Home, Setting, Play } from './pages';
 
 const App = () => {
   return (
-    <div className="w-screen h-screen flex justify-center items-center bg-[#F5F5DC]">
-      <Board />
-    </div>
+    <Routes>
+      <Route path="/*" element={<Home />} />
+      <Route path="/setting" element={<Setting />} />
+      <Route path="/play" element={<Play />} />
+    </Routes>
   );
 };
 
