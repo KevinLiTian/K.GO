@@ -7,7 +7,7 @@ import torch
 from torch.nn import NLLLoss
 
 from networks.policy import Conv192
-from training.policy_train import parse_file
+from training.sl_policy import parse_file
 
 CHECKPOINTS_DIR = "checkpoints"
 GRAPH_FILE = "./training/train.csv"
