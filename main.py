@@ -1,7 +1,8 @@
 import argparse
 
 from training.process import process
-from training.policy_train import train
+from training.sl_policy import train
+from training.rl_policy import run_n_games
 from training.evaluate import policy_evaluate, plot_policy_curves
 
 
@@ -25,4 +26,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    import torch
+    from AI.policy_player import ProbabilisticPolicyPlayer
+
+    player = ProbabilisticPolicyPlayer("./networks/conv192/best.pth")
+    opponent = ProbabilisticPolicyPlayer("./networks/conv192/best.pth")
+    optimizer = torch.optim.SGD(player.policy.parameters(), lr=0.003)
+    print(run_n_games(optimizer, 0.003, player, opponent, 2))
