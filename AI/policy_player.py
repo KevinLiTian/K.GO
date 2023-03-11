@@ -67,7 +67,7 @@ class ProbabilisticPolicyPlayer:
         for state in states:
             board_states.append(create_board_state(state)[:48])
         board_states = np.stack(board_states, axis=0)
-        board_states = torch.from_numpy(board_states)
+        board_states = torch.from_numpy(board_states).to(self.device)
         all_moves_distributions = self.policy(board_states)
 
         move_list = [None] * len(states)

@@ -3,6 +3,7 @@ from torch.nn import NLLLoss
 
 import Go.GameState as go
 from training.process import create_board_state
+from AI.policy_player import ProbabilisticPolicyPlayer
 
 
 def make_learning_pair(st, mv):
@@ -15,10 +16,9 @@ def make_learning_pair(st, mv):
 
 def run_n_games(optimizer, lr, learner, opponent, num_games):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
 
     states = [go.GameState() for _ in range(num_games)]
-    learner_net = learner.policy.to(device)
+    learner_net = learner.policy
 
     state_tensors = [[] for _ in range(num_games)]
     move_tensors = [[] for _ in range(num_games)]
@@ -57,7 +57,7 @@ def run_n_games(optimizer, lr, learner, opponent, num_games):
         current, other = other, current
 
     criterion = NLLLoss()
-    for (st_tensor, mv_tensor, won) in zip(state_tensors, move_tensors, learner_won):
+    for st_tensor, mv_tensor, won in zip(state_tensors, move_tensors, learner_won):
         optimizer.param_groups[0]["lr"] = abs(lr) * (1 if won else -1)
         st_tensor = torch.stack(st_tensor).to(device)
         mv_tensor = torch.Tensor(mv_tensor).to(device)
@@ -70,4 +70,17 @@ def run_n_games(optimizer, lr, learner, opponent, num_games):
         optimizer.step()
 
     wins = sum(state.get_winner() == pc for (state, pc) in zip(states, learner_color))
-    return float(wins) / num_games
+    print(f"Learner win rate: {float(wins) / num_games}")
+
+
+def train():
+    player = ProbabilisticPolicyPlayer("./networks/conv192/best.pth")
+    opponent = ProbabilisticPolicyPlayer("./networks/conv192/best.pth")
+    optimizer = torch.optim.SGD(player.policy.parameters(), lr=0.003)
+
+    for idx in range(125):
+        run_n_games(optimizer, 0.003, player, opponent, 4)
+        print(f"Iterations finished: {idx}/125")
+
+    checkpoint = {"model_state_dict": player.policy.state_dict()}
+    torch.save(checkpoint, "./rl_pool/0.pth")
