@@ -2,7 +2,7 @@ import argparse
 
 from training.process import process
 from training.policy_train import train
-from training.evaluate import policy_evaluate, policy_valuate_all, plot_policy_curves
+from training.evaluate import policy_evaluate, plot_policy_curves
 
 
 def main():
@@ -17,11 +17,9 @@ def main():
     if args.task == "preprocess":
         process(0, 160000)
     elif args.task == "train":
-        train(resume=True)
+        train(resume=False)
     elif args.task == "eval":
-        policy_evaluate("./checkpoints/checkpoint_4.pth")
-    elif args.task == "evalall":
-        policy_valuate_all()
+        policy_evaluate("./checkpoints/checkpoint_0_100.pth")
     elif args.task == "plot":
         plot_policy_curves()
 

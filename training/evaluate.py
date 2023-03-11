@@ -6,11 +6,11 @@ import pandas as pd
 import torch
 from torch.nn import NLLLoss
 
-from networks.policy import Conv192
+from networks.policy import Conv192, Conv256
 from training.policy_train import parse_file
 
 CHECKPOINTS_DIR = "checkpoints"
-GRAPH_FILE = "./training/train.csv"
+GRAPH_FILE = "./training/plots/conv256.csv"
 
 TRAIN_SET = [f"./dataset/{i}_{i+200}.npz" for i in range(0, 1000, 200)]
 VAL_SET = [f"./dataset/val/{i}_{i+200}.npz" for i in range(160000, 161000, 200)]
@@ -22,7 +22,7 @@ def policy_evaluate(model_path):
     print("Using device:", device)
 
     # Load model
-    model = Conv192().to(device)
+    model = Conv256().to(device)
     check = torch.load(model_path)
     model.load_state_dict(check["model_state_dict"])
 
@@ -100,38 +100,9 @@ def policy_evaluate(model_path):
     df.to_csv(GRAPH_FILE, index=False)
 
 
-def policy_valuate_all():
-    checkpoints = []
-
-    # Loop over files in the directory
-    for file_name in os.listdir(CHECKPOINTS_DIR):
-        # Check if the file matches the pattern
-        match = re.match(r"checkpoint_(\d+)_(\d+)", file_name)
-        if match:
-            epoch = int(match.group(1))
-            batch = int(match.group(2))
-            # Check if the batch number is in the range 50-750
-            if 50 <= batch <= 750:
-                checkpoints.append((epoch, batch, file_name))
-        else:
-            # Check if the file is a special checkpoint
-            match = re.match(r"checkpoint_(\d+)", file_name)
-            if match:
-                epoch = int(match.group(1))
-                checkpoints.append((epoch, None, file_name))
-
-    # Sort the checkpoints in the desired order
-    checkpoints.sort(key=lambda x: (x[0], x[1] or 751, x[2]))
-
-    # Loop over the checkpoints
-    for __, __, file_name in checkpoints:
-        model_path = os.path.join(CHECKPOINTS_DIR, file_name)
-        policy_evaluate(model_path)
-
-
 def plot_policy_curves():
     # Load data from CSV file
-    data = pd.read_csv("./training/train.csv")
+    data = pd.read_csv(GRAPH_FILE)
 
     # Set the x-axis values
     steps = data["Steps (K)"]

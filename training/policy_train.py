@@ -7,7 +7,7 @@ from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn import NLLLoss
 
-from networks.policy import Conv192
+from networks.policy import Conv192, Conv256
 
 # Hyperparameters
 NUM_EPOCH = 200
@@ -103,16 +103,13 @@ def train(resume=False):
         print(f"Resume from {latest_checkpoint}")
         checkpoint = torch.load(os.path.join(CHECKPOINT_DIR, latest_checkpoint))
 
-        model = Conv192().to(device)
+        model = Conv256().to(device)
         model.load_state_dict(checkpoint["model_state_dict"])
         criterion = NLLLoss()
         optimizer = SGD(model.parameters(), lr=LR)
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-
-        for g in optimizer.param_groups:
-            g["lr"] = 0.0015
 
         if "file_count" in checkpoint:
             file_count = checkpoint["file_count"]
@@ -122,7 +119,7 @@ def train(resume=False):
             cur_epoch = checkpoint["epoch"] + 1
 
     else:
-        model = Conv192().to(device)
+        model = Conv256().to(device)
         criterion = NLLLoss()
         optimizer = SGD(model.parameters(), lr=LR)
         scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
