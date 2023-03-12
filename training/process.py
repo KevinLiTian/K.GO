@@ -24,12 +24,22 @@ def parse_game(game):
 
     board_states = []
     moves = []
-    gs = GameState()
-    root = sgf_object.get_root()
+    results = []
 
     # Place setup stones
+    root = sgf_object.get_root()
     setup = root.get_setup_stones()[0]
+    gs = GameState()
     gs.place_handicaps(setup)
+
+    # Set result label
+    winner = sgf_object.get_winner()
+    if winner == "b":
+        result = 1
+    elif winner == "w":
+        result = -1
+    else:
+        raise Exception(f"{game} has no winner")
 
     main_sequence = sgf_object.get_main_sequence()
     for idx, node in enumerate(main_sequence):
@@ -56,7 +66,10 @@ def parse_game(game):
         move_encode[row, col] = 1
         moves.append(np.float32(np.argmax(move_encode.ravel())))
 
-    return board_states, moves
+        # Add winner
+        results.append(result)
+
+    return board_states, moves, results
 
 
 def create_board_state(state: GameState):
@@ -123,7 +136,7 @@ def create_board_state(state: GameState):
 
 
 def process(START, END):
-    # 228849 KGS games by
+    # 225833 KGS games by
     # - One of the players is 7 dan or stronger
     # - Both players 6 dan
     game_files = []
@@ -136,23 +149,32 @@ def process(START, END):
                 file_path = os.path.join(dirpath, file)
                 game_files.append(file_path)
 
-    # Save to disk setup
-    board_states_storage = []
-    moves_storage = []
-
     # Process
-    count = 0
-    for idx in range(START, END):
-        board_states, moves = parse_game(game_files[idx])
+    for idx in range(START, END, 200):
+        # Save to disk setup
+        board_states_storage = []
+        moves_storage = []
+        results_storage = []
 
-        # Store to temporary storage
-        board_states_storage.extend(board_states)
-        moves_storage.extend(moves)
+        start = idx
+        end = idx + 200
+        for game_id in range(start, end):
+            # Get data from game
+            board_states, moves, results = parse_game(game_files[game_id])
 
-        # Progress report
-        count += 1
-        print(f"{count}/{END - START} games processed")
+            # Store to temporary storage
+            board_states_storage.extend(board_states)
+            moves_storage.extend(moves)
+            results_storage.extend(results)
 
-    # Save to .npz
-    path = f"./dataset/{START}_{END}.npz"
-    np.savez_compressed(path, board_states=board_states_storage, moves=moves_storage)
+            # Progress report
+            print(f"Game {game_id} processed")
+
+        # Save to .npz
+        path = f"./dataset/{start}_{end}.npz"
+        np.savez_compressed(
+            path,
+            board_states=board_states_storage,
+            moves=moves_storage,
+            results=results_storage,
+        )
