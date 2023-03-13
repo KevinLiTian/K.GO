@@ -1,16 +1,12 @@
 import os
 
 import torch
-from torch.optim import SGD
-from torch.optim.lr_scheduler import StepLR
-from torch.nn import NLLLoss
+import torch.nn as nn
+import torch.optim as optim
+from torch.optim.lr_scheduler import MultiStepLR
 
+from networks.resnet import DualResnet
 from training.utils import parse_file
-
-# Hyperparameters
-NUM_EPOCH = 30
-BATCH_SIZE = 16
-LR = 0.003
 
 # Data directory
 DATA_FILES = [
@@ -20,9 +16,15 @@ DATA_FILES = [
 # Checkpoint directory
 CHECKPOINT_DIR = "./checkpoints"
 
+NUM_EPOCH = 30
+BATCH_SIZE = 2048
+LR = 0.1
+MOMENTUM = 0.9
+VALUE_WEIGHT = 0.01
+REG_WEIGHT = 1e-4
 
-def train(model, resume):
-    # Setup device (CPU/GPU)
+
+def train(resume):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
@@ -35,12 +37,16 @@ def train(model, resume):
         print(f"Resume from {latest_checkpoint}")
         checkpoint = torch.load(os.path.join(CHECKPOINT_DIR, latest_checkpoint))
 
-        model = model().to(device)
+        model = DualResnet().to(device)
         model.load_state_dict(checkpoint["model_state_dict"])
-        criterion = NLLLoss()
-        optimizer = SGD(model.parameters(), lr=LR)
+
+        # Setup optimizer
+        optimizer = optim.SGD(model.parameters(), lr=LR, momentum=MOMENTUM)
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-        scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
+
+        # Setup learning rate annealing
+        milestones = [200000, 400000, 600000, 700000]
+        scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
         if "file_count" in checkpoint:
@@ -51,19 +57,28 @@ def train(model, resume):
             cur_epoch = checkpoint["epoch"] + 1
 
     else:
-        model = model().to(device)
-        criterion = NLLLoss()
-        optimizer = SGD(model.parameters(), lr=LR)
-        scheduler = StepLR(optimizer, step_size=80000000, gamma=0.5)
+        model = DualResnet().to(device)
+
+        # Setup optimizer
+        optimizer = optim.SGD(model.parameters(), lr=LR, momentum=MOMENTUM)
+
+        # Setup learning rate annealing
+        milestones = [200000, 400000, 600000, 700000]
+        scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
 
         file_count = 0
         cur_epoch = 0
 
+    # Setup loss functions
+    policy_criterion = nn.CrossEntropyLoss()
+    value_criterion = nn.MSELoss()
+
     # Training utilities
-    remaining_boards, remaining_moves = [], []
+    remaining_boards, remaining_moves, remaining_results = [], [], []
 
     # Main train loop
     print(f"Start epoch {cur_epoch}, file count {file_count}")
+    model.train()
     for epoch in range(cur_epoch, NUM_EPOCH):
         if file_count == len(DATA_FILES):
             file_count = 0
@@ -71,24 +86,33 @@ def train(model, resume):
             (
                 board_states_batch,
                 moves_batch,
-                __,
+                results_batch,
                 remaining_boards,
                 remaining_moves,
-                __,
+                remaining_results,
             ) = parse_file(
                 file,
                 remaining_boards,
                 remaining_moves,
-                remaining_results=[],
-                batch_size=BATCH_SIZE,
-                features=48,
+                remaining_results,
+                BATCH_SIZE,
+                features=49,
             )
 
-            for board_states, moves in zip(board_states_batch, moves_batch):
+            for board_states, moves, results in zip(
+                board_states_batch, moves_batch, results_batch
+            ):
                 # Forward pass
-                board_states, moves = board_states.to(device), moves.to(device)
-                outputs = model(board_states)
-                loss = criterion(torch.log(outputs), moves)
+                board_states, moves, results = (
+                    board_states.to(device),
+                    moves.to(device),
+                    results.to(device),
+                )
+                policy_output, value_output = model(board_states)
+                policy_loss = policy_criterion(policy_output, moves)
+                value_loss = value_criterion(value_output, results)
+                reg_loss = sum(p.pow(2).sum() for p in model.parameters())
+                loss = policy_loss + VALUE_WEIGHT * value_loss + REG_WEIGHT * reg_loss
 
                 # Backward pass
                 optimizer.zero_grad()

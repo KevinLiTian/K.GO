@@ -1,13 +1,10 @@
-import os
-import re
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 from torch.nn import NLLLoss
 
 from networks.policy import Conv192, Conv256
-from training.sl_policy import parse_file
+from training.utils import parse_file
 
 CHECKPOINTS_DIR = "checkpoints"
 GRAPH_FILE = "./training/plots/conv256.csv"
@@ -36,7 +33,7 @@ def policy_evaluate(model_path):
     remaining_boards, remaining_moves = [], []
     for file in TRAIN_SET:
         board_states, moves, remaining_boards, remaining_moves = parse_file(
-            file, remaining_boards, remaining_moves
+            file, remaining_boards, remaining_moves, batch_size=16, features=48
         )
         total_boards += len(board_states) * 16
 
@@ -60,7 +57,7 @@ def policy_evaluate(model_path):
     remaining_boards, remaining_moves = [], []
     for file in VAL_SET:
         board_states, moves, remaining_boards, remaining_moves = parse_file(
-            file, remaining_boards, remaining_moves
+            file, remaining_boards, remaining_moves, batch_size=16, features=48
         )
         total_boards += len(board_states) * 16
 
