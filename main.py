@@ -1,6 +1,6 @@
 import argparse
 
-from training.process import process
+from training.process import process, process_zero
 from training import sl_policy, rl_policy
 from training.evaluate import policy_evaluate, plot_policy_curves
 from networks.policy import Conv256
@@ -16,8 +16,10 @@ def main():
     )
 
     args = parser.parse_args()
-    if args.task == "preprocess":
+    if args.task == "process":
         process(0, 160000)
+    elif args.task == "processz":
+        process_zero(0, 200)
     elif args.task == "slpolicy":
         sl_policy.train(GoRolloutNetwork, False)
     elif args.task == "eval":

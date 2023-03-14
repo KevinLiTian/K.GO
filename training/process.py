@@ -13,12 +13,13 @@ from Go.features import (
     get_ladder_capture,
     get_ladder_escape,
     get_sensibleness,
+    get_board_history
 )
 import Go.GameState as go
 from Go.GameState import GameState
 
 
-def parse_game(game):
+def parse_game(game, ZERO=False):
     with open(game, "rb") as file:
         sgf_object = sgf.Sgf_game.from_bytes(file.read())
 
@@ -54,7 +55,10 @@ def parse_game(game):
             break
 
         # Add board state
-        board_states.append(create_board_state(gs))
+        if not ZERO:
+            board_states.append(create_board_state(gs))
+        else:
+            board_states.append(get_board_history(gs))
 
         # Make move
         color = go.BLACK if color == "b" else go.WHITE
@@ -172,6 +176,51 @@ def process(START, END):
 
         # Save to .npz
         path = f"./dataset/{start}_{end}.npz"
+        np.savez_compressed(
+            path,
+            board_states=board_states_storage,
+            moves=moves_storage,
+            results=results_storage,
+        )
+
+
+def process_zero(START, END):
+    # 225833 KGS games by
+    # - One of the players is 7 dan or stronger
+    # - Both players 6 dan
+    game_files = []
+
+    # Read from data folder
+    for dirpath, __, filenames in os.walk("./data"):
+        filenames.sort()
+        for file in filenames:
+            if file.endswith("sgf"):
+                file_path = os.path.join(dirpath, file)
+                game_files.append(file_path)
+
+    # Process
+    for idx in range(START, END, 200):
+        # Save to disk setup
+        board_states_storage = []
+        moves_storage = []
+        results_storage = []
+
+        start = idx
+        end = idx + 200
+        for game_id in range(start, end):
+            # Get data from game
+            board_states, moves, results = parse_game(game_files[game_id], ZERO=True)
+
+            # Store to temporary storage
+            board_states_storage.extend(board_states)
+            moves_storage.extend(moves)
+            results_storage.extend(results)
+
+            # Progress report
+            print(f"Game {game_id} processed")
+
+        # Save to .npz
+        path = f"./zero_dataset/{start}_{end}.npz"
         np.savez_compressed(
             path,
             board_states=board_states_storage,

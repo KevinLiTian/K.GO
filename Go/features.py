@@ -224,6 +224,7 @@ def get_board_history(state: go.GameState):
         # Place handicaps
         if len(state.handicaps) != 0:
             new_gs.place_handicaps(state.handicaps)
+            planes.append(get_black_white(new_gs, player=state.current_player))
 
         for action in state.history:
             new_gs.do_move(action)
