@@ -4,6 +4,7 @@ from training.process import process
 from training import sl_policy, rl_policy
 from training.evaluate import policy_evaluate, plot_policy_curves
 from networks.policy import Conv256
+from networks.rollout import GoRolloutNetwork
 
 
 def main():
@@ -18,7 +19,7 @@ def main():
     if args.task == "preprocess":
         process(0, 160000)
     elif args.task == "slpolicy":
-        sl_policy.train(Conv256, False)
+        sl_policy.train(GoRolloutNetwork, False)
     elif args.task == "eval":
         policy_evaluate("./checkpoints/checkpoint_0_100.pth")
     elif args.task == "plot":
