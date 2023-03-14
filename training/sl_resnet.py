@@ -10,7 +10,7 @@ from training.utils import parse_file
 
 # Data directory
 DATA_FILES = [
-    os.path.join("zero_dataset", f"{i}_{i+200}.npz") for i in range(0, 160000, 200)
+    os.path.join("zero_dataset", f"{i}_{i+400}.npz") for i in range(0, 200000, 400)
 ]
 
 # Checkpoint directory
@@ -96,7 +96,7 @@ def train(resume):
                 remaining_moves,
                 remaining_results,
                 BATCH_SIZE,
-                features=49,
+                features=17,
             )
 
             total_policy_loss = 0.0

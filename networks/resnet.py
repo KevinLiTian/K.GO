@@ -88,7 +88,7 @@ class DualResnet(nn.Module):
     two heads, policy and value.
     """
 
-    def __init__(self, num_residual_blocks=19, in_channels=49):
+    def __init__(self, num_residual_blocks=19, in_channels=17):
         super(DualResnet, self).__init__()
 
         self.residual_tower = ResidualTower(num_residual_blocks, in_channels)
