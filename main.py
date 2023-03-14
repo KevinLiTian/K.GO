@@ -17,9 +17,9 @@ def main():
 
     args = parser.parse_args()
     if args.task == "process":
-        process(0, 160000)
+        process(161200, 162000)
     elif args.task == "processz":
-        process_zero(0, 200)
+        process_zero(160000, 200000)
     elif args.task == "slpolicy":
         sl_policy.train(GoRolloutNetwork, False)
     elif args.task == "eval":

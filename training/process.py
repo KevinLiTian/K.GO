@@ -13,7 +13,7 @@ from Go.features import (
     get_ladder_capture,
     get_ladder_escape,
     get_sensibleness,
-    get_board_history
+    get_board_history,
 )
 import Go.GameState as go
 from Go.GameState import GameState
@@ -78,7 +78,7 @@ def parse_game(game, ZERO=False):
 
 def create_board_state(state: GameState):
     """
-    48 feature planes
+    49 feature planes
     - Stone colours (3)
     - Constant 1 plane (1)
     - Turns since (8)
@@ -90,6 +90,7 @@ def create_board_state(state: GameState):
     - Ladder escape (1)
     - Sensibleness (1)
     - Const 0 plane (1)
+    - Player's colour (1)
     """
 
     # Stone colour each (1x19x19)
@@ -199,14 +200,14 @@ def process_zero(START, END):
                 game_files.append(file_path)
 
     # Process
-    for idx in range(START, END, 200):
+    for idx in range(START, END, 400):
         # Save to disk setup
         board_states_storage = []
         moves_storage = []
         results_storage = []
 
         start = idx
-        end = idx + 200
+        end = idx + 400
         for game_id in range(start, end):
             # Get data from game
             board_states, moves, results = parse_game(game_files[game_id], ZERO=True)

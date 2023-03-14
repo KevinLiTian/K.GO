@@ -22,6 +22,9 @@ class GameState:
         self.komi = komi  # Komi is number of extra points WHITE gets for going 2nd
         self.handicaps = []
         self.history = []
+        self.board_history = []  # This is for history of boards
+        for _ in range(8):  # Initialize board history with empty boards.
+            self.board_history.append(np.array(self.board))
         self.num_black_prisoners = 0
         self.num_white_prisoners = 0
         self.is_end_of_game = False
@@ -210,6 +213,7 @@ class GameState:
         other.ko = self.ko
         other.handicaps = list(self.handicaps)
         other.history = list(self.history)
+        other.board_history = list(self.board_history)
         other.num_black_prisoners = self.num_black_prisoners
         other.num_white_prisoners = self.num_white_prisoners
         other.enforce_superko = self.enforce_superko
@@ -555,6 +559,9 @@ class GameState:
         for action in actions:
             self.do_move(action, BLACK)
         self.history = []
+        self.board_history = []
+        for _ in range(8):
+            self.board_history.append(np.array(self.board))
 
     def get_current_player(self):
         """Returns the color of the player who will make the next move."""
@@ -614,6 +621,8 @@ class GameState:
             # next turn
             self.current_player = -color
             self.history.append(action)
+            self.board_history.append(np.array(self.board))
+            self.board_history.pop(0)
             self.__legal_move_cache = None
         else:
             self.current_player = reset_player

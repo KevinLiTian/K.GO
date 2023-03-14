@@ -10,7 +10,7 @@ from training.utils import parse_file
 
 # Data directory
 DATA_FILES = [
-    os.path.join("dataset", f"{i}_{i+200}.npz") for i in range(0, 160000, 200)
+    os.path.join("zero_dataset", f"{i}_{i+200}.npz") for i in range(0, 160000, 200)
 ]
 
 # Checkpoint directory
@@ -99,6 +99,9 @@ def train(resume):
                 features=49,
             )
 
+            total_policy_loss = 0.0
+            total_value_loss = 0.0
+            count = 0
             for board_states, moves, results in zip(
                 board_states_batch, moves_batch, results_batch
             ):
@@ -122,10 +125,17 @@ def train(resume):
                 optimizer.step()
                 scheduler.step()
 
-            file_count += 1
-            print(f"Files finished: {file_count}/{len(DATA_FILES)}, Loss: {loss}")
+                # Progress report
+                total_policy_loss += policy_loss.item()
+                total_value_loss += value_loss.item()
+                count += 1
 
-            if file_count % 50 == 0 and file_count != 800:
+            file_count += 1
+            print(
+                f"Files finished: {file_count}/{len(DATA_FILES)}, Policy loss: {total_policy_loss / count}, Value loss: {total_value_loss / count}"
+            )
+
+            if file_count % 100 == 0 and file_count != 800:
                 checkpoint = {
                     "file_count": file_count,
                     "epoch": epoch,

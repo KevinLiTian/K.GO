@@ -186,59 +186,18 @@ def get_sensibleness(state: go.GameState):
     return feature
 
 
-def get_black_white(state: go.GameState, player):
-    """A feature encoding WHITE BLACK on separate planes, but plane 0
-    always refers to the input player and plane 1 to the opponent
-    """
-    planes = np.zeros((2, state.size, state.size), dtype=np.float32)
-    planes[0, :, :] = state.board == player  # own stone
-    planes[1, :, :] = state.board == -player  # opponent stone
-    return planes
-
-
 def get_board_history(state: go.GameState):
-    """Get 19 x 19 x 17 board history, proposed in 'Mastering the Game of Go without Human Knowledge'"""
-    planes = []
-
-    # Enough historys
-    if len(state.history) >= 8:
-        new_gs = go.GameState()
-
-        # Place handicaps
-        if len(state.handicaps) != 0:
-            new_gs.place_handicaps(state.handicaps)
-
-        # Recreate up to last 8 moves
-        for action in state.history[:-8]:
-            new_gs.do_move(action)
-
-        # Generate state for last 8 moves
-        for action in state.history[-8:]:
-            new_gs.do_move(action)
-            planes.insert(0, get_black_white(new_gs, player=state.current_player))
-
-    # Not enough, pad with all zeros
+    """
+    Last 8 moves board history, black white separated (16 planes)
+    Current player (1 plane)
+    """
+    planes = np.zeros((17, state.size, state.size))
+    board_history = state.board_history
+    for i in range(8):
+        planes[2 * i, :, :] = board_history[7 - i] == state.current_player
+        planes[2 * i + 1, :, :] = board_history[7 - i] == -state.current_player
+    if state.current_player == go.BLACK:
+        planes[16, :, :] = 1
     else:
-        new_gs = go.GameState()
-
-        # Place handicaps
-        if len(state.handicaps) != 0:
-            new_gs.place_handicaps(state.handicaps)
-            planes.append(get_black_white(new_gs, player=state.current_player))
-
-        for action in state.history:
-            new_gs.do_move(action)
-            planes.insert(0, get_black_white(new_gs, player=state.current_player))
-
-        num_missing = 8 - len(planes)
-        if num_missing != 0:
-            planes.append(
-                np.zeros((num_missing * 2, state.size, state.size), dtype=np.float32)
-            )
-
-    # Player's colour
-    planes.append(
-        np.ones((1, state.size, state.size), dtype=np.float32)
-        * (state.current_player == go.BLACK)
-    )
-    return np.concatenate(planes, axis=0)
+        planes[16, :, :] = 0
+    return planes
