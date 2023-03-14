@@ -3,7 +3,7 @@ import numpy as np
 import Go.GameState as go
 
 
-def get_board(state):
+def get_board(state: go.GameState):
     """A feature encoding WHITE BLACK and EMPTY on separate planes, but plane 0
     always refers to the current player and plane 1 to the opponent
     """
@@ -14,7 +14,7 @@ def get_board(state):
     return planes
 
 
-def get_turns_since(state, maximum=8):
+def get_turns_since(state: go.GameState, maximum=8):
     """A feature encoding the age of the stone at each location up to 'maximum'
 
     Note:
@@ -29,7 +29,7 @@ def get_turns_since(state, maximum=8):
     return planes
 
 
-def get_liberties(state, maximum=8):
+def get_liberties(state: go.GameState, maximum=8):
     """A feature encoding the number of liberties of the group connected to the stone at
     each location
 
@@ -48,7 +48,7 @@ def get_liberties(state, maximum=8):
     return planes
 
 
-def get_capture_size(state, maximum=8):
+def get_capture_size(state: go.GameState, maximum=8):
     """A feature encoding the number of opponent stones that would be captured by
     playing at each location, up to 'maximum'
 
@@ -79,7 +79,7 @@ def get_capture_size(state, maximum=8):
     return planes
 
 
-def get_self_atari_size(state, maximum=8):
+def get_self_atari_size(state: go.GameState, maximum=8):
     """A feature encoding the size of the own-stone group that is put into atari by
     playing at a location
 
@@ -119,7 +119,7 @@ def get_self_atari_size(state, maximum=8):
     return planes
 
 
-def get_liberties_after(state, maximum=8):
+def get_liberties_after(state: go.GameState, maximum=8):
     """A feature encoding what the number of liberties *would be* of the group connected to
     the stone *if* played at a location
 
@@ -162,7 +162,7 @@ def get_liberties_after(state, maximum=8):
     return planes
 
 
-def get_ladder_capture(state):
+def get_ladder_capture(state: go.GameState):
     """A feature wrapping GameState.is_ladder_capture()."""
     feature = np.zeros((1, state.size, state.size), dtype=np.float32)
     for (x, y) in state.get_legal_moves():
@@ -170,7 +170,7 @@ def get_ladder_capture(state):
     return feature
 
 
-def get_ladder_escape(state):
+def get_ladder_escape(state: go.GameState):
     """A feature wrapping GameState.is_ladder_escape()."""
     feature = np.zeros((1, state.size, state.size), dtype=np.float32)
     for (x, y) in state.get_legal_moves():
@@ -178,9 +178,66 @@ def get_ladder_escape(state):
     return feature
 
 
-def get_sensibleness(state):
+def get_sensibleness(state: go.GameState):
     """A move is 'sensible' if it is legal and if it does not fill the current_player's own eye"""
     feature = np.zeros((1, state.size, state.size), dtype=np.float32)
     for (x, y) in state.get_legal_moves(include_eyes=False):
         feature[0, x, y] = 1
     return feature
+
+
+def get_black_white(state: go.GameState, player):
+    """A feature encoding WHITE BLACK on separate planes, but plane 0
+    always refers to the input player and plane 1 to the opponent
+    """
+    planes = np.zeros((2, state.size, state.size), dtype=np.float32)
+    planes[0, :, :] = state.board == player  # own stone
+    planes[1, :, :] = state.board == -player  # opponent stone
+    return planes
+
+
+def get_board_history(state: go.GameState):
+    """Get 19 x 19 x 17 board history, proposed in 'Mastering the Game of Go without Human Knowledge'"""
+    planes = []
+
+    # Enough historys
+    if len(state.history) >= 8:
+        new_gs = go.GameState()
+
+        # Place handicaps
+        if len(state.handicaps) != 0:
+            new_gs.place_handicaps(state.handicaps)
+
+        # Recreate up to last 8 moves
+        for action in state.history[:-8]:
+            new_gs.do_move(action)
+
+        # Generate state for last 8 moves
+        for action in state.history[-8:]:
+            new_gs.do_move(action)
+            planes.insert(0, get_black_white(new_gs, player=state.current_player))
+
+    # Not enough, pad with all zeros
+    else:
+        new_gs = go.GameState()
+
+        # Place handicaps
+        if len(state.handicaps) != 0:
+            new_gs.place_handicaps(state.handicaps)
+
+        for action in state.history:
+            new_gs.do_move(action)
+            planes.insert(0, get_black_white(new_gs, player=state.current_player))
+
+        num_missing = 8 - len(planes)
+        if num_missing != 0:
+            planes.append(
+                np.zeros((num_missing * 2, state.size, state.size), dtype=np.float32)
+            )
+
+    # Player's colour
+    planes.append(
+        np.ones((1, state.size, state.size), dtype=np.float32)
+        * (state.current_player == go.BLACK)
+    )
+    return np.concatenate(planes, axis=0)
