@@ -170,6 +170,7 @@ def process(START, END):
             # Store to temporary storage
             board_states_storage.extend(board_states)
             moves_storage.extend(moves)
+            results = np.array(results, dtype=np.float32)
             results_storage.extend(results)
 
             # Progress report

@@ -186,12 +186,20 @@ def get_sensibleness(state: go.GameState):
     return feature
 
 
+def get_all_legal(state: go.GameState):
+    """Get all legal moves including own eyes"""
+    feature = np.zeros((1, state.size, state.size), dtype=np.float32)
+    for (x, y) in state.get_legal_moves(include_eyes=True):
+        feature[0, x, y] = 1
+    return feature
+
+
 def get_board_history(state: go.GameState):
     """
     Last 8 moves board history, black white separated (16 planes)
     Current player (1 plane)
     """
-    planes = np.zeros((17, state.size, state.size))
+    planes = np.zeros((17, state.size, state.size), dtype=np.float32)
     board_history = state.board_history
     for i in range(8):
         planes[2 * i, :, :] = board_history[7 - i] == state.current_player
