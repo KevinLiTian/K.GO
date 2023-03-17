@@ -3,3 +3,4 @@ dataset/
 zero_dataset/
 .DS_Store
 __pycache__/
+/checkpoints

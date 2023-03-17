@@ -48,18 +48,11 @@ class TreeNode:
         Returns:
             A child TreeNode which is the most promising according to PUCT.
         """
-        highest_uct = 0
-        highest_index = 0
-
-        # Select the child with the highest Q + U value
-        for idx, child in enumerate(self.children):
-            uct = child.Qsa + child.Psa * C_PUCT * (
-                math.sqrt(self.Nsa) / (1 + child.Nsa)
-            )
-            if uct > highest_uct:
-                highest_uct = uct
-                highest_index = idx
-
+        Nsa = np.array([child.Nsa for child in self.children])
+        Qsa = np.array([child.Qsa for child in self.children])
+        Psa = np.array([child.Psa for child in self.children])
+        uct = Qsa + Psa * C_PUCT * np.sqrt(self.Nsa) / (1 + Nsa)
+        highest_index = np.argmax(uct)
         return self.children[highest_index]
 
     def expand_node(self, game: go.GameState, psa_vector):
@@ -72,7 +65,7 @@ class TreeNode:
         for move in valid_moves:
             action = deepcopy(move)
             idx = game.size * action[0] + action[1]
-            self.add_child_node(parent=self, action=action, psa=psa_vector[idx])
+            self.add_child_node(parent=self, action=action, psa=psa_vector[0, idx])
 
     def add_child_node(self, parent, action, psa=0.0):
         """Creates and adds a child TreeNode to the current node.
@@ -107,10 +100,12 @@ class MCTS:
 
     def __init__(self, net):
         """Initializes TreeNode with the TreeNode, board and neural network."""
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.root = None
         self.game = None
         self.net = net
 
+    @torch.no_grad()
     def search(self, game: go.GameState, node: TreeNode, temperature):
         """MCTS loop to get the best move which can be played at a given state.
         Args:
@@ -133,10 +128,12 @@ class MCTS:
                 game.do_move(node.action)
 
             # Get move probabilities and values from the network for this state.
-            psa_vector, v = self.net(
-                torch.from_numpy(get_board_history(game)).unsqueeze(0)
+            board_state = (
+                torch.from_numpy(get_board_history(game)).unsqueeze(0).to(self.device)
             )
-            psa_vector = psa_vector.numpy()
+            psa_vector, v = self.net(board_state)
+            psa_vector = torch.softmax(psa_vector, dim=1).cpu().numpy()
+            v = float(v)
 
             # Add Dirichlet noise to the psa_vector of the root node.
             if node.parent is None:
@@ -161,13 +158,13 @@ class MCTS:
                 node = node.parent
 
         # Select the move with a temperature param
-        nsa_vector = []
-        for child in self.root.children:
-            temperature_exponent = int(1 / temperature)
-            nsa_vector.append(child.Nsa**temperature_exponent)
+        highest_nsa, highest_idx = 0, 0
+        for idx, child in enumerate(self.root.children):
+            if child.Nsa > highest_nsa:
+                highest_nsa = child.Nsa
+                highest_idx = idx
 
-        nsa_vector_sum = sum(nsa_vector)
-        return [x / nsa_vector_sum for x in nsa_vector]
+        return self.root.children[highest_idx].action
 
     def add_dirichlet_noise(self, game: go.GameState, psa_vector):
         """Add Dirichlet noise to the psa_vector of the root node.

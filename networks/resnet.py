@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -76,7 +77,7 @@ class ValueHead(nn.Module):
         x = F.relu(self.bn(self.conv(x)))
         x = x.view(-1, 19 * 19)
         x = F.relu(self.fc1(x))
-        x = F.tanh(self.fc2(x))
+        x = torch.tanh(self.fc2(x))
         return x
 
 

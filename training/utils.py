@@ -36,6 +36,16 @@ def generate_batch(board_states, moves):
     return states, actions
 
 
+def generate_results(board_states, results):
+    new_results = np.empty(len(results), dtype=np.float32)
+    for i, board in enumerate(board_states):
+        if board[-1, 0, 0] == 0:
+            new_results[i] = -results[i]
+        else:
+            new_results[i] = results[i]
+    return torch.from_numpy(new_results).unsqueeze(dim=1)
+
+
 def parse_file(
     file_path,
     remaining_boards,
@@ -72,7 +82,11 @@ def parse_file(
         )
         board_states_batch.append(states)
         moves_batch.append(actions)
-        results_batch.append(results[start_idx:end_idx])
+        results_batch.append(
+            generate_results(
+                board_states[start_idx:end_idx, :features], results[start_idx:end_idx]
+            )
+        )
 
     if board_states.shape[0] % batch_size != 0:
         remaining_boards = board_states[num_batches * batch_size :]

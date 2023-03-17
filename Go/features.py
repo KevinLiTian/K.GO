@@ -61,7 +61,7 @@ def get_capture_size(state: go.GameState, maximum=8):
 
     """
     planes = np.zeros((maximum, state.size, state.size), dtype=np.float32)
-    for (x, y) in state.get_legal_moves():
+    for x, y in state.get_legal_moves():
         # multiple disconnected groups may be captured. hence we loop over
         # groups and count sizes if captured.
         n_captured = 0
@@ -86,7 +86,7 @@ def get_self_atari_size(state: go.GameState, maximum=8):
     """
     planes = np.zeros((maximum, state.size, state.size), dtype=np.float32)
 
-    for (x, y) in state.get_legal_moves():
+    for x, y in state.get_legal_moves():
         # make a copy of the liberty/group sets at (x,y) so we can manipulate them
         lib_set_after = set(state.liberty_sets[x][y])
         group_set_after = set()
@@ -106,7 +106,7 @@ def get_self_atari_size(state: go.GameState, maximum=8):
         # add captured stones to liberties if they are neighboring the 'group_set_after'
         # i.e. if they will become liberties once capture is resolved
         if len(captured_stones) > 0:
-            for (gx, gy) in group_set_after:
+            for gx, gy in group_set_after:
                 # intersection of group's neighbors and captured stones will become liberties
                 lib_set_after |= set(state._neighbors((gx, gy))) & captured_stones
         if (x, y) in lib_set_after:
@@ -130,7 +130,7 @@ def get_liberties_after(state: go.GameState, maximum=8):
     """
     planes = np.zeros((maximum, state.size, state.size), dtype=np.float32)
     # note - left as all zeros if not a legal move
-    for (x, y) in state.get_legal_moves():
+    for x, y in state.get_legal_moves():
         # make a copy of the set of liberties at (x,y) so we can add to it
         lib_set_after = set(state.liberty_sets[x][y])
         group_set_after = set()
@@ -151,7 +151,7 @@ def get_liberties_after(state: go.GameState, maximum=8):
         # add captured stones to liberties if they are neighboring the 'group_set_after'
         # i.e. if they will become liberties once capture is resolved
         if len(captured_stones) > 0:
-            for (gx, gy) in group_set_after:
+            for gx, gy in group_set_after:
                 # intersection of group's neighbors and captured stones will become liberties
                 lib_set_after |= set(state._neighbors((gx, gy))) & captured_stones
         # (x,y) itself may have made its way back in, but shouldn't count
@@ -165,7 +165,7 @@ def get_liberties_after(state: go.GameState, maximum=8):
 def get_ladder_capture(state: go.GameState):
     """A feature wrapping GameState.is_ladder_capture()."""
     feature = np.zeros((1, state.size, state.size), dtype=np.float32)
-    for (x, y) in state.get_legal_moves():
+    for x, y in state.get_legal_moves():
         feature[0, x, y] = state.is_ladder_capture((x, y))
     return feature
 
@@ -173,7 +173,7 @@ def get_ladder_capture(state: go.GameState):
 def get_ladder_escape(state: go.GameState):
     """A feature wrapping GameState.is_ladder_escape()."""
     feature = np.zeros((1, state.size, state.size), dtype=np.float32)
-    for (x, y) in state.get_legal_moves():
+    for x, y in state.get_legal_moves():
         feature[0, x, y] = state.is_ladder_escape((x, y))
     return feature
 
@@ -181,16 +181,17 @@ def get_ladder_escape(state: go.GameState):
 def get_sensibleness(state: go.GameState):
     """A move is 'sensible' if it is legal and if it does not fill the current_player's own eye"""
     feature = np.zeros((1, state.size, state.size), dtype=np.float32)
-    for (x, y) in state.get_legal_moves(include_eyes=False):
+    for x, y in state.get_legal_moves(include_eyes=False):
         feature[0, x, y] = 1
     return feature
 
 
 def get_all_legal(state: go.GameState):
     """Get all legal moves including own eyes"""
-    feature = np.zeros((1, state.size, state.size), dtype=np.float32)
-    for (x, y) in state.get_legal_moves(include_eyes=True):
-        feature[0, x, y] = 1
+    feature = np.zeros((1, state.size * state.size), dtype=np.float32)
+    for x, y in state.get_legal_moves(include_eyes=True):
+        idx = state.size * x + y
+        feature[0, idx] = 1
     return feature
 
 
