@@ -6,8 +6,8 @@ const Stone = ({ color }: StoneProps) => {
       <filter id="stoneFilter">
         <feSpecularLighting
           result="specOut"
-          specularExponent="64"
-          lightingColor="white"
+          specularExponent="32"
+          lightingColor="grey"
         >
           <fePointLight x="10" y="10" z="8" />
         </feSpecularLighting>
