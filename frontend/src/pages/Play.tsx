@@ -1,11 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Board } from '../components';
-import API from '../api';
 
 const Play = () => {
-  // Game ID
-  const id = useRef(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<any>(null);
 
@@ -14,21 +11,18 @@ const Play = () => {
   const turn = localStorage.getItem('turn');
 
   const DIFFICULTY_LOOKUP: { [key: string]: string } = {
-    '1': '/greedypolicy',
+    '1': '/localhost:8080',
+    '2': '/localhost:8081',
   };
 
   useEffect(() => {
     if (mode == '1') {
-      API.post('/setup').then((res) => {
-        id.current = res.data.id;
-        setSettings({
-          id: id.current,
-          mode,
-          api: DIFFICULTY_LOOKUP[difficulty],
-          turn,
-        });
-        setLoading(false);
+      setSettings({
+        mode,
+        api: DIFFICULTY_LOOKUP[difficulty],
+        turn,
       });
+      setLoading(false);
     } else {
       setSettings('DUMMY');
       setLoading(false);

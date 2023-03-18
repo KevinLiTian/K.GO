@@ -1,3 +1,7 @@
+export const BLACK = 1;
+export const WHITE = -1;
+export const EMPTY = 0;
+
 function contains(array: number[][], tuple: [number, number]) {
   for (const element of array) {
     if (tuple[0] === element[0] && tuple[1] === element[1]) {
@@ -23,7 +27,7 @@ export function isStar(row: number, col: number) {
 }
 
 export function playerColor(player: number) {
-  return player === 1 ? 'black' : 'lightGray';
+  return player === BLACK ? 'black' : 'lightGray';
 }
 
 export function copyBoard(board: number[][]) {
@@ -45,7 +49,7 @@ export function createBoard(): number[][] {
   for (let i = 0; i < 19; i++) {
     let inner = [];
     for (let j = 0; j < 19; j++) {
-      inner.push(0);
+      inner.push(EMPTY);
     }
     outer.push(inner);
   }
@@ -169,7 +173,7 @@ export function removeDeadGroups(
   for (let i of deadGroups) {
     if (i !== curStoneGroup) {
       for (let [row, col] of groups[i]) {
-        board[row][col] = 0;
+        board[row][col] = EMPTY;
       }
     }
   }

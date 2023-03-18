@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import API from '../api';
 
 import {
+  BLACK,
+  WHITE,
+  EMPTY,
   copyBoard,
   createBoard,
   getBoardHash,
@@ -22,21 +24,41 @@ const Board = ({ initial, settings }: boardProps) => {
     row: number;
     col: number;
   } | null>(null);
-  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [currentPlayer, setCurrentPlayer] = useState(BLACK);
   const [previousBoards, setPreviousBoards] = useState<number[]>([]);
+  const [socket, setSocket] = useState<any>(null);
 
-  const clientPlayer = settings ? (settings.turn == '0' ? 1 : 2) : 1;
-  const AIPlayer = settings ? (settings.turn == '0' ? 2 : 1) : 2;
+  const clientPlayer = settings
+    ? settings.turn == '0'
+      ? BLACK
+      : WHITE
+    : BLACK;
+  const AIPlayer = settings ? (settings.turn == '0' ? WHITE : BLACK) : WHITE;
 
   useEffect(() => {
-    if (settings && settings.mode == '1' && settings.turn == '1') {
-      API.post(settings.api!, { id: settings.id }).then((res) => {
-        const move = res.data.move;
-        const cpBoard = copyBoard(board);
-        cpBoard[move[0]][move[1]] = 1;
-        setBoard(cpBoard);
-        setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
-      });
+    if (settings && settings.mode == '1') {
+      // create WebSocket connection
+      const ws = new WebSocket(`ws://${settings?.api}`);
+
+      // set up event listeners for WebSocket events
+      ws.onopen = () => {
+        ws.send(AIPlayer == BLACK ? 'b' : 'w');
+      };
+
+      ws.onmessage = (event) => {
+        setBoard(JSON.parse(event.data));
+        setCurrentPlayer((prev) => (prev == BLACK ? WHITE : BLACK));
+      };
+
+      ws.onclose = () => console.log('WebSocket connection closed.');
+
+      // save WebSocket instance in state
+      setSocket(ws);
+
+      // clean up function to close WebSocket connection on component unmount
+      return () => {
+        ws.close();
+      };
     }
   }, []);
 
@@ -53,7 +75,7 @@ const Board = ({ initial, settings }: boardProps) => {
       return;
 
     // Cell occupied
-    if (board[row][col] !== 0) return;
+    if (board[row][col] !== EMPTY) return;
 
     // Deep copy new board for processing
     const newBoard = copyBoard(board);
@@ -82,27 +104,10 @@ const Board = ({ initial, settings }: boardProps) => {
 
     // Update board and switch player
     setBoard(newBoard);
-    setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
+    setCurrentPlayer((prev) => (prev == BLACK ? WHITE : BLACK));
 
     if (settings && settings.mode == '1') {
-      // AI make move
-      API.post(settings?.api!, { id: settings?.id, move: [row, col] }).then(
-        (res) => {
-          const move = res.data.move;
-          const cpBoard = copyBoard(newBoard);
-          cpBoard[move[0]][move[1]] = AIPlayer;
-
-          // Get current stone group and all dead stone groups
-          const [groups, curStoneGroup, deadGroups] = getGroups(
-            cpBoard,
-            move[0],
-            move[1]
-          );
-          removeDeadGroups(cpBoard, groups, curStoneGroup, deadGroups);
-          setBoard(cpBoard);
-          setCurrentPlayer((prev) => (prev == 1 ? 2 : 1));
-        }
-      );
+      socket.send(JSON.stringify([row, col]));
     }
   }
 
@@ -123,12 +128,12 @@ const Board = ({ initial, settings }: boardProps) => {
                       <rect x="0" y="0" width="30" height="30" fill="#cd9d6f" />
                     </g>
                     <BoardGrid row={rowIndex} col={colIndex} />
-                    {board[rowIndex][colIndex] === 0 &&
+                    {board[rowIndex][colIndex] === EMPTY &&
                       rowIndex === hoveredCell?.row &&
                       colIndex === hoveredCell.col && (
                         <StoneHover color={playerColor(currentPlayer)} />
                       )}
-                    {board[rowIndex][colIndex] !== 0 && (
+                    {board[rowIndex][colIndex] !== EMPTY && (
                       <>
                         <StoneShadow />
                         <Stone color={playerColor(board[rowIndex][colIndex])} />

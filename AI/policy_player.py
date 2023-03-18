@@ -7,42 +7,51 @@ import Go.GameState as go
 
 
 class GreedyPolicyPlayer:
-    def __init__(self, checkpoint):
+    def __init__(self, checkpoint, game: go.GameState):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.policy = Conv192().to(self.device)
         checkpoint = torch.load(checkpoint, map_location=self.device)
         self.policy.load_state_dict(checkpoint["model_state_dict"])
 
-    def get_move(self, state):
+        self.game = game
+
+    def get_move(self):
         # list with sensible moves
-        sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]
+        sensible_moves = [
+            move for move in self.game.get_legal_moves(include_eyes=False)
+        ]
         if len(sensible_moves) > 0:
-            board_states = create_board_state(state)[:48]
+            board_states = create_board_state(self.game)[:48]
             board_states = torch.from_numpy(board_states).to(self.device)
             move_probs = self.policy(board_states)
             idx = torch.argmax(move_probs)
 
             row = int(idx / 19)
             col = int(idx % 19)
+            if (row, col) not in sensible_moves:
+                return go.PASS_MOVE
             return (row, col)
-
         return go.PASS_MOVE
 
 
 class ProbabilisticPolicyPlayer:
-    def __init__(self, checkpoint):
+    def __init__(self, checkpoint, game: go.GameState):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.policy = Conv192().to(self.device)
         checkpoint = torch.load(checkpoint, map_location=self.device)
         self.policy.load_state_dict(checkpoint["model_state_dict"])
 
-    def get_move(self, state):
+        self.game = game
+
+    def get_move(self):
         # list with sensible moves
-        sensible_moves = [move for move in state.get_legal_moves(include_eyes=False)]
+        sensible_moves = [
+            move for move in self.game.get_legal_moves(include_eyes=False)
+        ]
         if len(sensible_moves) > 0:
-            board_states = create_board_state(state)[:48]
+            board_states = create_board_state(self.game)[:48]
             board_states = torch.from_numpy(board_states).to(self.device)
             move_probs = self.policy(board_states)
 
@@ -54,7 +63,6 @@ class ProbabilisticPolicyPlayer:
             if (row, col) not in sensible_moves:
                 return go.PASS_MOVE
             return (row, col)
-
         return go.PASS_MOVE
 
     def get_moves(self, states):
