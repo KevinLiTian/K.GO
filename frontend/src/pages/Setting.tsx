@@ -38,7 +38,7 @@ const Setting = () => {
           <div className="flex flex-col items-center">
             <h2 className="font-poppins text-3xl">Difficulty</h2>
             <div className="flex gap-5 mt-5">
-              {[1].map((num) => (
+              {[1, 2].map((num) => (
                 <div
                   key={num}
                   className="font-poppins h-[40px] w-[40px] flex justify-center items-center bg-[#cd9d6f] rounded-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer"

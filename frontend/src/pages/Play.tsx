@@ -11,8 +11,8 @@ const Play = () => {
   const turn = localStorage.getItem('turn');
 
   const DIFFICULTY_LOOKUP: { [key: string]: string } = {
-    '1': '/localhost:8080',
-    '2': '/localhost:8081',
+    '1': '/localhost:8081',
+    '2': '/localhost:8080',
   };
 
   useEffect(() => {

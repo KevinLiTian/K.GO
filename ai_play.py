@@ -54,13 +54,22 @@ async def prob_player(websocket):
     turn = go.BLACK
 
     checkpoint = "./networks/conv192/best.pth"
-    ProbabilisticPolicyPlayer(checkpoint, game)
+    ai_player = ProbabilisticPolicyPlayer(checkpoint, game)
 
     # continuously listen for incoming messages
     while True:
-        message = await websocket.recv()
-        print(message)
-        await websocket.send("RECV")
+        if turn == ai_turn:
+            move = ai_player.get_move()
+            game.do_move(move)
+            turn = -turn
+            data = json.dumps(game.board.tolist())
+            await websocket.send(data)
+
+        move = await websocket.recv()
+        move = json.loads(move)
+        row, col = move[0], move[1]
+        game.do_move((row, col))
+        turn = -turn
 
 
 # create a WebSocket server and register the coroutines
