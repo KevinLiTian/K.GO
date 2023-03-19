@@ -167,12 +167,17 @@ class MCTS:
                 node.back_prop(v)
                 node = node.parent
 
-            if cur_num_sim > NUM_SIM:
-                Nsa = np.array([child.Nsa for child in self.root.children])
-                Qsa = np.array([child.Qsa for child in self.root.children])
-                agree = np.argmax(Nsa) == np.argmax(Qsa)
+            if len(self.game.history) < 30:
+                agree = True
+            else:
+                agree = False
+                if cur_num_sim > NUM_SIM:
+                    Nsa = np.array([child.Nsa for child in self.root.children])
+                    Qsa = np.array([child.Qsa for child in self.root.children])
+                    agree = np.argmax(Nsa) == np.argmax(Qsa)
 
         # Select the move with a temperature param
+        Nsa = np.array([child.Nsa for child in self.root.children])
         idx = np.argmax(Nsa)
 
         return (

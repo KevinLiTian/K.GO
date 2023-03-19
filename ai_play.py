@@ -104,6 +104,7 @@ async def mcts_player(websocket):
         move = json.loads(move)
         row, col = move[0], move[1]
         game.do_move((row, col))
+        ai_player.update_root((row, col))
         turn = -turn
 
 
