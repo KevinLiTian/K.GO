@@ -117,15 +117,15 @@ const Board = ({ initial, settings }: boardProps) => {
         {board.map((row, rowIndex) => (
           <tr key={rowIndex}>
             {row.map((__, colIndex) => (
-              <td className="h-[30px] w-[30px] p-0" key={colIndex}>
+              <td className="h-[36px] w-[36px] p-0" key={colIndex}>
                 <div
                   onMouseOver={() => handleMouseOver(rowIndex, colIndex)}
                   onMouseOut={handleMouseOut}
                   onClick={() => handleMouseClick(rowIndex, colIndex)}
                 >
-                  <svg width="30" height="30px">
+                  <svg width="36" height="36">
                     <g>
-                      <rect x="0" y="0" width="30" height="30" fill="#cd9d6f" />
+                      <rect x="0" y="0" width="36" height="36" fill="#cd9d6f" />
                     </g>
                     <BoardGrid row={rowIndex} col={colIndex} />
                     {board[rowIndex][colIndex] === EMPTY &&

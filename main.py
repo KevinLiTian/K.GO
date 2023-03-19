@@ -24,7 +24,7 @@ def main():
         sl_policy.train(Conv256, False)
     elif args.task == "eval":
         # policy_evaluate("./checkpoints/checkpoint_0_100.pth")
-        resnet_eval("./checkpoints/checkpoint_0_125.pth")
+        resnet_eval("./checkpoints/checkpoint_0_350.pth")
     elif args.task == "plot":
         plot_policy_curves()
     elif args.task == "rl":

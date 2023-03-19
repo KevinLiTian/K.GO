@@ -109,12 +109,12 @@ class MCTS:
     def __init__(self, net):
         """Initializes TreeNode with the TreeNode, board and neural network."""
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.root = None
+        self.root = TreeNode()
         self.game = None
         self.net = net
 
     @torch.no_grad()
-    def search(self, game: go.GameState, node: TreeNode, temperature):
+    def search(self, game: go.GameState, temperature):
         """MCTS loop to get the best move which can be played at a given state.
         Args:
             game: An object containing the game state.
@@ -123,10 +123,12 @@ class MCTS:
         Returns:
             A child node representing the best move to play at this state.
         """
-        self.root = node
         self.game = game
+        cur_num_sim = 0
+        agree = False
 
-        for i in range(NUM_SIM):
+        while cur_num_sim <= NUM_SIM or not agree:
+            cur_num_sim += 1
             node = self.root
             game = self.game.copy()
 
@@ -165,14 +167,18 @@ class MCTS:
                 node.back_prop(v)
                 node = node.parent
 
-        # Select the move with a temperature param
-        highest_nsa, highest_idx = 0, 0
-        for idx, child in enumerate(self.root.children):
-            if child.Nsa > highest_nsa:
-                highest_nsa = child.Nsa
-                highest_idx = idx
+            if cur_num_sim > NUM_SIM:
+                Nsa = np.array([child.Nsa for child in self.root.children])
+                Qsa = np.array([child.Qsa for child in self.root.children])
+                agree = np.argmax(Nsa) == np.argmax(Qsa)
 
-        return self.root.children[highest_idx].action
+        # Select the move with a temperature param
+        idx = np.argmax(Nsa)
+
+        return (
+            self.root.children[idx].action,
+            self.root.children[idx].Qsa,
+        )
 
     def add_dirichlet_noise(self, game: go.GameState, psa_vector):
         """Add Dirichlet noise to the psa_vector of the root node.

@@ -9,7 +9,7 @@ const Stone = ({ color }: StoneProps) => {
           specularExponent="32"
           lightingColor="grey"
         >
-          <fePointLight x="10" y="10" z="8" />
+          <fePointLight x="12" y="12" z="9" />
         </feSpecularLighting>
         <feComposite
           in="SourceGraphic"
@@ -22,9 +22,9 @@ const Stone = ({ color }: StoneProps) => {
         />
       </filter>
       <circle
-        cx="15.0"
-        cy="15.0"
-        r="13"
+        cx="18.0"
+        cy="18.0"
+        r="16.5"
         fill={color}
         filter="url(#stoneFilter)"
       />

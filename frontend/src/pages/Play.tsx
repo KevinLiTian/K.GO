@@ -11,8 +11,9 @@ const Play = () => {
   const turn = localStorage.getItem('turn');
 
   const DIFFICULTY_LOOKUP: { [key: string]: string } = {
-    '1': '/localhost:8081',
-    '2': '/localhost:8080',
+    '1': '/localhost:8080',
+    '2': '/localhost:8081',
+    '3': '/localhost:8082',
   };
 
   useEffect(() => {
@@ -31,7 +32,7 @@ const Play = () => {
 
   return (
     <div className="w-screen h-screen bg-[#F5F5DC]">
-      <div className="w-full h-full flex justify-center items-center scale-[120%]">
+      <div className="w-full h-full flex justify-center items-center">
         {!loading && settings && <Board settings={settings} />}
       </div>
     </div>

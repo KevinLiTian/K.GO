@@ -9,23 +9,23 @@ const BoardGrid = ({ col, row }: BoardGridProps) => {
   return (
     <>
       {/* 4 Corners */}
-      {col === 0 && row === 0 && <BoardCorner style="rotate(0, 15, 15)" />}
-      {col === 0 && row === 18 && <BoardCorner style="rotate(270, 15, 15)" />}
-      {col === 18 && row === 0 && <BoardCorner style="rotate(90, 15, 15)" />}
-      {col === 18 && row === 18 && <BoardCorner style="rotate(180, 15, 15)" />}
+      {col === 0 && row === 0 && <BoardCorner style="rotate(0, 18, 18)" />}
+      {col === 0 && row === 18 && <BoardCorner style="rotate(270, 18, 18)" />}
+      {col === 18 && row === 0 && <BoardCorner style="rotate(90, 18, 18)" />}
+      {col === 18 && row === 18 && <BoardCorner style="rotate(180, 18, 18)" />}
 
       {/* 4 Edges */}
       {col === 0 && row !== 0 && row !== 18 && (
-        <BoardEdge style="rotate(270, 15, 15)" />
+        <BoardEdge style="rotate(270, 18, 18)" />
       )}
       {col === 18 && row !== 0 && row !== 18 && (
-        <BoardEdge style="rotate(90, 15, 15)" />
+        <BoardEdge style="rotate(90, 18, 18)" />
       )}
       {row === 0 && col !== 0 && col !== 18 && (
-        <BoardEdge style="rotate(0, 15, 15)" />
+        <BoardEdge style="rotate(0, 18, 18)" />
       )}
       {row === 18 && col !== 0 && col !== 18 && (
-        <BoardEdge style="rotate(180, 15, 15)" />
+        <BoardEdge style="rotate(180, 18, 18)" />
       )}
 
       {/* General Grid */}

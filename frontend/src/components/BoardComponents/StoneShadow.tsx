@@ -1,7 +1,7 @@
 const StoneShadow = () => {
   return (
     <g>
-      <circle cx="18.0" cy="18.0" r="12" fill="black" fillOpacity="0.2" />
+      <circle cx="20.0" cy="20.0" r="16" fill="black" fillOpacity="0.3" />
     </g>
   );
 };
