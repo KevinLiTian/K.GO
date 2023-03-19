@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import { Board } from '../components';
+import GoIcon from '../assets/go.png';
+import { useNavigate } from 'react-router-dom';
 
 const Play = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<any>(null);
 
@@ -32,7 +35,14 @@ const Play = () => {
 
   return (
     <div className="w-screen h-screen bg-[#F5F5DC]">
-      <div className="w-full h-full flex justify-center items-center">
+      <div
+        className="flex items-center pl-8 cursor-pointer"
+        onClick={() => navigate('/')}
+      >
+        <img src={GoIcon} alt="go-icon" className="w-[80px] h-[80px]" />
+        <h1 className="font-poppins text-3xl">K.GO</h1>
+      </div>
+      <div className="w-full h-4/5 flex justify-center items-center">
         {!loading && settings && <Board settings={settings} />}
       </div>
     </div>

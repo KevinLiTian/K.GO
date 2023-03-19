@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import GoIcon from '../assets/go.png';
+
 const Setting = () => {
   const navigate = useNavigate();
   const [phase, setPhase] = useState(0);
 
   return (
     <div className="w-screen h-screen bg-[#F5F5DC] overflow-auto">
-      <div className="w-full h-full flex justify-center items-center">
+      <div
+        className="flex items-center pl-8 cursor-pointer"
+        onClick={() => navigate('/')}
+      >
+        <img src={GoIcon} alt="go-icon" className="w-[80px] h-[80px]" />
+        <h1 className="font-poppins text-3xl">K.GO</h1>
+      </div>
+      <div className="w-full h-[80%] flex justify-center items-center">
         {phase == 0 && (
           <div className="flex flex-col items-center">
             <h2 className="font-poppins text-3xl">Mode</h2>

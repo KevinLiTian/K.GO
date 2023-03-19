@@ -6,14 +6,11 @@ import { heroBoard } from '../utils/data';
 
 const Home = () => {
   const navigate = useNavigate();
-  const settings = {
-    mode: '0',
-  };
 
   return (
     <div className="w-screen h-screen bg-[#F5F5DC] overflow-auto">
-      <div className="w-full h-[80px] flex justify-between items-center pt-5">
-        <div className="flex items-center pl-8">
+      <div className="w-full h-[80px] flex justify-between items-center">
+        <div className="flex items-center pl-8 cursor-pointer">
           <img src={GoIcon} alt="go-icon" className="w-[80px] h-[80px]" />
           <h1 className="font-poppins text-3xl">K.GO</h1>
         </div>
@@ -36,7 +33,7 @@ const Home = () => {
             <h1 className="font-poppins text-4xl mb-2">Mastering</h1>
             <h1 className="font-poppins text-4xl">The Grand Game of Go</h1>
           </div>
-          <p className="font-poppins text-center lg:text-left">
+          <p className="font-poppins w-full lg:w-[80%] text-center lg:text-left">
             The game was invented in China more than 2,500 years ago and is
             believed to be the oldest board game continuously played to the
             present day
