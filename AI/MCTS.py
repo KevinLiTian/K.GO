@@ -7,7 +7,8 @@ import numpy as np
 import Go.GameState as go
 from Go.features import get_board_history, get_all_legal
 
-C_PUCT = 5
+C_PUCT_BASE = 19652
+C_PUCT_INIT = 1.25
 NUM_SIM = 1600
 
 
@@ -51,7 +52,14 @@ class TreeNode:
         Nsa = np.array([child.Nsa for child in self.children])
         Qsa = np.array([child.Qsa for child in self.children])
         Psa = np.array([child.Psa for child in self.children])
-        uct = Qsa + Psa * C_PUCT * np.sqrt(self.Nsa) / (1 + Nsa)
+
+        # Calculate Usa
+        ln = math.log((1 + self.Nsa + C_PUCT_BASE) / C_PUCT_BASE)
+        sqrt = math.sqrt(max(1, self.Nsa - 1))
+        nume = 2 * (ln + C_PUCT_INIT) * sqrt * Psa
+        Usa = nume / (1 + Nsa)
+
+        uct = Qsa + Usa
         highest_index = np.argmax(uct)
         return self.children[highest_index]
 

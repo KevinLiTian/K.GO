@@ -36,7 +36,7 @@ class GreedyPolicyPlayer:
 
 
 class ProbabilisticPolicyPlayer:
-    def __init__(self, checkpoint, game: go.GameState):
+    def __init__(self, checkpoint, game: go.GameState, alpha=2):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.policy = Conv192().to(self.device)
@@ -44,6 +44,7 @@ class ProbabilisticPolicyPlayer:
         self.policy.load_state_dict(checkpoint["model_state_dict"])
 
         self.game = game
+        self.alpha = alpha
 
     def get_move(self):
         # list with sensible moves
@@ -54,6 +55,9 @@ class ProbabilisticPolicyPlayer:
             board_states = create_board_state(self.game)[:48]
             board_states = torch.from_numpy(board_states).to(self.device)
             move_probs = self.policy(board_states)
+
+            move_probs = torch.pow(move_probs, self.alpha)
+            move_probs /= torch.sum(move_probs)
 
             # Select possible moves at random
             idx = torch.multinomial(move_probs, num_samples=1)
