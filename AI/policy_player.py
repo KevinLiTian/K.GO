@@ -36,7 +36,7 @@ class GreedyPolicyPlayer:
 
 
 class ProbabilisticPolicyPlayer:
-    def __init__(self, checkpoint, game: go.GameState, alpha=2):
+    def __init__(self, checkpoint, game: go.GameState, alpha=4):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.policy = Conv192().to(self.device)
