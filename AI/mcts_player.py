@@ -1,7 +1,6 @@
 import torch
 
 from networks.resnet import DualResnet
-from Go.features import get_board_history
 import Go.GameState as go
 from AI.MCTS import MCTS
 

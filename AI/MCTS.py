@@ -163,8 +163,8 @@ class MCTS:
 
             # Check for end game
             while node is not None:
-                v = -v
                 node.back_prop(v)
+                v = -v
                 node = node.parent
 
             if len(self.game.history) < 30:
