@@ -1,4 +1,4 @@
-# K.GO - A deep learning Go AI
+# K.GO - A Deep Learning Go AI
 
 <img width="1470" alt="Screenshot 2023-05-31 at 10 23 54 AM" src="https://github.com/KevinLiTian/K.GO/assets/99038613/6192ac99-e4a8-4b09-b3d1-13d8e0f00252">
 
