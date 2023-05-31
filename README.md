@@ -1,6 +1,6 @@
 # K.GO - A Deep Learning Go AI
 
-<img width="1470" alt="Screenshot 2023-05-31 at 10 23 54 AM" src="https://github.com/KevinLiTian/K.GO/assets/99038613/6192ac99-e4a8-4b09-b3d1-13d8e0f00252">
+<img width="1470" alt="Screenshot 2023-05-31 at 10 57 34 AM" src="https://github.com/KevinLiTian/K.GO/assets/99038613/06e37d02-d1bb-4a01-90f1-9fc493060a10">
 
 ### Motivation
 Personally as an amateur 5 dan Go player, I played the game of Go since I was 8. I stopped playing after going to high school, but I've always
